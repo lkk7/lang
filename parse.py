@@ -1,6 +1,8 @@
 from typing import Callable
 from tokens import Token, TokenType
-from expressions import Binary, Grouping, Literal, Unary, Ternary
+from ast_defs import (Assign, BlockStmt, Binary, Grouping, Literal, Stmt,
+                      Unary, Ternary, Variable,
+                      PrintStmt, ExpressionStmt, VarStmt)
 
 
 class ParseError(SyntaxError):
@@ -15,13 +17,66 @@ class Parser:
         self.current = 0
 
     def parse(self):
+        statements: list[Stmt] = []
+        while not self.is_end():
+            statements.append(self.declaration())
+        return statements
+
+    def declaration(self):
         try:
-            return self.expression()
+            if self.match(TokenType.VAR):
+                return self.var_declaration()
+            return self.statement()
         except ParseError:
+            self.synchronize()
             return None
 
+    def var_declaration(self):
+        name = self.consume(TokenType.IDENTIFIER, "Expected variable name")
+        initializer = None
+        if self.match(TokenType.EQUAL):
+            initializer = self.expression()
+        self.consume(TokenType.SEMICOLON,
+                     "Expected ';' after variable declaration")
+        return VarStmt(name, initializer)
+
+    def statement(self):
+        if self.match(TokenType.PRINT):
+            return self.print_statement()
+        if self.match(TokenType.LEFT_BRACE):
+            return BlockStmt(self.block())
+        return self.expr_statement()
+
+    def block(self):
+        statements = []
+        while not self.check(TokenType.RIGHT_BRACE) and not self.is_end():
+            statements.append(self.declaration())
+        self.consume(TokenType.RIGHT_BRACE, "Expected '}' at after block")
+        return statements
+
+    def expr_statement(self):
+        expr = self.expression()
+        self.consume(TokenType.SEMICOLON, "Expected ';' after expression")
+        return ExpressionStmt(expr)
+
+    def print_statement(self):
+        expr = self.expression()
+        self.consume(TokenType.SEMICOLON, "Expected ';' after value.")
+        return PrintStmt(expr)
+
     def expression(self):
-        return self.ternary()
+        return self.assignment()
+
+    def assignment(self):
+        expr = self.ternary()
+
+        if self.match(TokenType.EQUAL):
+            equals = self.previous()
+            val = self.assignment()
+            if isinstance(expr, Variable):
+                return Assign(expr.name, val)
+            self.error(equals, "Invalid assignment target")
+        return expr
 
     def ternary(self):
         expr = self.equality()
@@ -37,7 +92,7 @@ class Parser:
     def equality(self):
         expr = self.comparison()
 
-        while self.match(TokenType.EQUAL, TokenType.EQUAL_EQUAL):
+        while self.match(TokenType.EQUAL_EQUAL, TokenType.BANG_EQUAL):
             operator = self.previous()
             right = self.comparison()
             expr = Binary(expr, operator, right)
@@ -86,6 +141,8 @@ class Parser:
             return Literal(None)
         if self.match(TokenType.NUMBER, TokenType.STRING):
             return Literal(self.previous().literal)
+        if self.match(TokenType.IDENTIFIER):
+            return Variable(self.previous())
         if self.match(TokenType.LEFT_PAREN):
             expr = self.expression()
             self.consume(TokenType.RIGHT_PAREN,

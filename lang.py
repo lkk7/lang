@@ -8,7 +8,6 @@ from tokens import Token, TokenType
 
 class Lang:
     def __init__(self):
-        self.interpreter = Interpreter(self.runtime_err)
         self.had_error: bool = False
         self.had_runtime_error: bool = False
 
@@ -31,12 +30,13 @@ class Lang:
         scanner = Scanner(source, self.err)
         tokens = scanner.scan_tokens()
         parser = Parser(tokens, self.err_token)
-        expression = parser.parse()
+        statements = parser.parse()
 
         if self.had_error:
             return
 
-        self.interpreter.interpret(expression)
+        interpreter = Interpreter(self.runtime_err)
+        interpreter.interpret(statements)
 
     def err(self, line: int, msg: str):
         self.report_err(line, "", msg)

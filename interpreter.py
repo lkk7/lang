@@ -1,20 +1,59 @@
-import typing
-from expressions import (Binary, Grouping, Literal,
-                         Ternary, Unary, Expr, Visitor)
+from typing import Any, Callable
+from ast_defs import (Assign, Binary, BlockStmt, ExpressionStmt, Grouping,
+                      Literal, PrintStmt, Stmt, StmtVisitor,
+                      Ternary, Unary, Expr, ExprVisitor, Variable, VarStmt)
+from environment import Environment
 from runtime_err import LangRuntimeError
 from tokens import Token, TokenType
 
 
-class Interpreter(Visitor):
-    def __init__(self, on_error: typing.Callable[[Exception], None]):
+class Interpreter(ExprVisitor, StmtVisitor):
+    def __init__(self, on_error: Callable[[Exception], None]):
+        self.environment = Environment()
         self.on_error = on_error
 
-    def interpret(self, expr: Expr):
+    def interpret(self, statements: list[Stmt]):
         try:
-            val = self.eval(expr)
-            print(self.stringify(val))
+            for stmt in statements:
+                self.execute(stmt)
         except LangRuntimeError as e:
             self.on_error(e)
+
+    def execute(self, statement: Stmt):
+        statement.accept(self)
+
+    def visit_blockstmt(self, stmt: BlockStmt):
+        self.execute_block(stmt.statements, Environment(self.environment))
+        return None
+
+    def execute_block(self, statements: list[Stmt], environment: Environment):
+        previous = self.environment
+        try:
+            self.environment = environment
+            for stmt in statements:
+                self.execute(stmt)
+        finally:
+            self.environment = previous
+
+    def visit_assign(self, expr: Assign):
+        val = self.eval(expr.value)
+        self.environment.assign(expr.name, val)
+        return val
+
+    def visit_varstmt(self, stmt: VarStmt):
+        value = None
+        if stmt.initializer is not None:
+            value = self.eval(stmt.initializer)
+        self.environment.define(stmt.name.lexeme, value)
+
+    def visit_expressionstmt(self, stmt: ExpressionStmt):
+        self.eval(stmt.expression)
+        return None
+
+    def visit_printstmt(self, stmt: PrintStmt):
+        val = self.eval(stmt.expression)
+        print(self.stringify(val))
+        return None
 
     def visit_ternary(self, expr: Ternary):
         if bool(self.eval(expr.first)):
@@ -75,17 +114,20 @@ class Interpreter(Visitor):
                 return not bool(val)
         return None
 
+    def visit_variable(self, expr: Variable):
+        return self.environment[expr.name]
+
     def visit_literal(self, expr: Literal):
         return expr.value
 
-    def check_num_operand(self, operator: Token, operand: typing.Any):
+    def check_num_operand(self, operator: Token, operand: Any):
         if type(operand) == int or type(operand) == float:
             return
         raise LangRuntimeError(operator, "Operand must be a number")
 
     def check_num_operands(self, operator: Token,
-                           left: typing.Any,
-                           right: typing.Any):
+                           left: Any,
+                           right: Any):
         if ((type(left) == int or type(left) == float)
                 and (type(right) == int or type(right) == float)):
             return
@@ -93,10 +135,10 @@ class Interpreter(Visitor):
             operator, "Operands must be numbers"
         )
 
-    def eval(self, expr: Expr):
+    def eval(self, expr: Expr | Stmt):
         return expr.accept(self)
 
-    def stringify(self, expr: typing.Any):
+    def stringify(self, expr: Any):
         if expr is None:
             return "nil"
         if isinstance(expr, bool):

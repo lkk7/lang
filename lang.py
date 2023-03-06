@@ -1,4 +1,5 @@
 import sys
+
 from interpreter import Interpreter
 from parse import Parser
 from runtime_err import LangRuntimeError
@@ -12,7 +13,7 @@ class Lang:
         self.had_runtime_error: bool = False
 
     def run_file(self, filename: str):
-        with open(filename, 'r') as file:
+        with open(filename, "r") as file:
             bytes = file.read()
         self.run(bytes)
         if self.had_error:

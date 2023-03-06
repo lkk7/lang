@@ -47,6 +47,14 @@ class ExprVisitor(ABC):
     def visit_assign(self, expr: Assign):
         raise NotImplementedError
 
+    @abstractmethod
+    def visit_logical(self, expr: Logical):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_call(self, expr: Call):
+        raise NotImplementedError
+
 
 class StmtVisitor(ABC):
     @abstractmethod
@@ -63,6 +71,22 @@ class StmtVisitor(ABC):
 
     @abstractmethod
     def visit_varstmt(self, stmt: VarStmt):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_ifstmt(self, stmt: IfStmt):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_whilestmt(self, stmt: WhileStmt):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_functionstmt(self, stmt: FunctionStmt):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_returnstmt(self, stmt: ReturnStmt):
         raise NotImplementedError
 
 
@@ -130,6 +154,26 @@ class Assign(Expr):
 
 
 @dataclass
+class Logical(Expr):
+    left: Expr
+    operator: Token
+    right: Expr
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visit_logical(self)
+
+
+@dataclass
+class Call(Expr):
+    callee: Expr
+    paren: Token
+    arguments: list[Expr]
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visit_call(self)
+
+
+@dataclass
 class BlockStmt(Expr):
     statements: list[Stmt]
 
@@ -160,3 +204,41 @@ class VarStmt(Expr):
 
     def accept(self, visitor: StmtVisitor):
         return visitor.visit_varstmt(self)
+
+
+@dataclass
+class IfStmt(Expr):
+    condition: Expr
+    then_branch: Stmt
+    else_branch: Stmt
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_ifstmt(self)
+
+
+@dataclass
+class WhileStmt(Expr):
+    condition: Expr
+    body: Stmt
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_whilestmt(self)
+
+
+@dataclass
+class FunctionStmt(Expr):
+    name: Token
+    params: list[Token]
+    body: list[Stmt]
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_functionstmt(self)
+
+
+@dataclass
+class ReturnStmt(Expr):
+    keyword: Token
+    val: Expr
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_returnstmt(self)

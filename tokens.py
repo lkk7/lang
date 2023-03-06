@@ -8,51 +8,51 @@ class TokenType(Enum):
     EOF = auto()
 
     # Single char
-    LEFT_PAREN = auto(),
-    RIGHT_PAREN = auto(),
-    LEFT_BRACE = auto(),
-    RIGHT_BRACE = auto(),
-    COMMA = auto(),
-    DOT = auto(),
-    MINUS = auto(),
-    PLUS = auto(),
-    COLON = auto(),
-    SEMICOLON = auto(),
-    SLASH = auto(),
-    STAR = auto(),
-    QUESTION = auto(),
+    LEFT_PAREN = auto()
+    RIGHT_PAREN = auto()
+    LEFT_BRACE = auto()
+    RIGHT_BRACE = auto()
+    COMMA = auto()
+    DOT = auto()
+    MINUS = auto()
+    PLUS = auto()
+    COLON = auto()
+    SEMICOLON = auto()
+    SLASH = auto()
+    STAR = auto()
+    QUESTION = auto()
 
     # Single and two char
-    BANG = auto(),
-    BANG_EQUAL = auto(),
-    EQUAL = auto(),
-    EQUAL_EQUAL = auto(),
-    GREATER = auto(),
-    GREATER_EQUAL = auto(),
-    LESS = auto(),
-    LESS_EQUAL = auto(),
+    BANG = auto()
+    BANG_EQUAL = auto()
+    EQUAL = auto()
+    EQUAL_EQUAL = auto()
+    GREATER = auto()
+    GREATER_EQUAL = auto()
+    LESS = auto()
+    LESS_EQUAL = auto()
 
     # Literals
-    STRING = auto(),
-    NUMBER = auto(),
+    STRING = auto()
+    NUMBER = auto()
 
     # Keywords
-    AND = auto(),
-    CLASS = auto(),
-    ELSE = auto(),
-    FALSE = auto(),
-    FUN = auto(),
-    FOR = auto(),
-    IF = auto(),
-    NIL = auto(),
-    OR = auto(),
-    PRINT = auto(),
-    RETURN = auto(),
-    SUPER = auto(),
-    THIS = auto(),
-    TRUE = auto(),
-    VAR = auto(),
-    WHILE = auto(),
+    AND = auto()
+    CLASS = auto()
+    ELSE = auto()
+    FALSE = auto()
+    FUN = auto()
+    FOR = auto()
+    IF = auto()
+    NIL = auto()
+    OR = auto()
+    PRINT = auto()
+    RETURN = auto()
+    SUPER = auto()
+    THIS = auto()
+    TRUE = auto()
+    VAR = auto()
+    WHILE = auto()
 
     def __str__(self):
         return self.name

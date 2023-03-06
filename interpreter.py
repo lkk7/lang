@@ -1,16 +1,43 @@
-from typing import Any, Callable
-from ast_defs import (Assign, Binary, BlockStmt, ExpressionStmt, Grouping,
-                      Literal, PrintStmt, Stmt, StmtVisitor,
-                      Ternary, Unary, Expr, ExprVisitor, Variable, VarStmt)
+from typing import Any, Callable, cast
+
+from ast_defs import (
+    Assign,
+    Binary,
+    BlockStmt,
+    Call,
+    Expr,
+    ExpressionStmt,
+    ExprVisitor,
+    FunctionStmt,
+    Grouping,
+    IfStmt,
+    Literal,
+    Logical,
+    PrintStmt,
+    ReturnStmt,
+    Stmt,
+    StmtVisitor,
+    Ternary,
+    Unary,
+    Variable,
+    VarStmt,
+    WhileStmt,
+)
+
+from callable_obj import CallableObj
 from environment import Environment
+from function import FunctionObj
+from return_val import ReturnVal
 from runtime_err import LangRuntimeError
 from tokens import Token, TokenType
 
 
 class Interpreter(ExprVisitor, StmtVisitor):
     def __init__(self, on_error: Callable[[Exception], None]):
-        self.environment = Environment()
+        self.globals = Environment()
+        self.environment = self.globals
         self.on_error = on_error
+        self.globals.define("clock", CallableObj())
 
     def interpret(self, statements: list[Stmt]):
         try:
@@ -35,6 +62,23 @@ class Interpreter(ExprVisitor, StmtVisitor):
         finally:
             self.environment = previous
 
+    def visit_functionstmt(self, stmt: FunctionStmt):
+        function = FunctionObj(stmt, self.environment)
+        self.environment.define(stmt.name.lexeme, function)
+        return None
+
+    def visit_ifstmt(self, stmt: IfStmt):
+        if self.eval(stmt.condition):
+            self.execute(stmt.then_branch)
+        elif stmt.else_branch:
+            self.execute(stmt.else_branch)
+        return None
+
+    def visit_whilestmt(self, stmt: WhileStmt):
+        while self.eval(stmt.condition):
+            self.execute(stmt.body)
+        return None
+
     def visit_assign(self, expr: Assign):
         val = self.eval(expr.value)
         self.environment.assign(expr.name, val)
@@ -45,6 +89,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
         if stmt.initializer is not None:
             value = self.eval(stmt.initializer)
         self.environment.define(stmt.name.lexeme, value)
+        return None
 
     def visit_expressionstmt(self, stmt: ExpressionStmt):
         self.eval(stmt.expression)
@@ -55,10 +100,26 @@ class Interpreter(ExprVisitor, StmtVisitor):
         print(self.stringify(val))
         return None
 
+    def visit_returnstmt(self, stmt: ReturnStmt):
+        val = None
+        if stmt.val is not None:
+            val = self.eval(stmt.val)
+        raise ReturnVal(val)
+
     def visit_ternary(self, expr: Ternary):
         if bool(self.eval(expr.first)):
             return self.eval(expr.second)
         return self.eval(expr.third)
+
+    def visit_logical(self, expr: Logical):
+        left = self.eval(expr.left)
+        if expr.operator == TokenType.OR:
+            if left:
+                return left
+        else:
+            if not left:
+                return left
+        return self.eval(expr.right)
 
     def visit_binary(self, expr: Binary):
         left = self.eval(expr.left)
@@ -74,13 +135,14 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 self.check_num_operands(expr.operator, left, right)
                 return left - right
             case TokenType.PLUS:
-                if ((type(left) == str and type(right) == str)
-                    or ((type(left) == int or type(left) == float)
-                        and (type(right) == int or type(right) == float))):
+                if (type(left) == str and type(right) == str) or (
+                    (type(left) == int or type(left) == float)
+                    and (type(right) == int or type(right) == float)
+                ):
                     return left + right
                 raise LangRuntimeError(
                     expr.operator,
-                    "Operands must be two numbers or two strings."
+                    "Operands must be two numbers or two strings.",
                 )
             case TokenType.GREATER:
                 self.check_num_operands(expr.operator, left, right)
@@ -117,6 +179,21 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visit_variable(self, expr: Variable):
         return self.environment[expr.name]
 
+    def visit_call(self, expr: Call):
+        args = []
+        for arg in expr.arguments:
+            args.append(self.eval(arg))
+        function = cast(CallableObj, self.eval(expr.callee))
+        if not isinstance(function, CallableObj):
+            raise LangRuntimeError(expr.paren)
+        if len(args) != function.arity():
+            raise RuntimeError(
+                expr.paren,
+                f"Expected {function.arity()} arguments but got {len(args)}",
+            )
+
+        return function.call(self, args)
+
     def visit_literal(self, expr: Literal):
         return expr.value
 
@@ -125,15 +202,12 @@ class Interpreter(ExprVisitor, StmtVisitor):
             return
         raise LangRuntimeError(operator, "Operand must be a number")
 
-    def check_num_operands(self, operator: Token,
-                           left: Any,
-                           right: Any):
-        if ((type(left) == int or type(left) == float)
-                and (type(right) == int or type(right) == float)):
+    def check_num_operands(self, operator: Token, left: Any, right: Any):
+        if (type(left) == int or type(left) == float) and (
+            type(right) == int or type(right) == float
+        ):
             return
-        raise LangRuntimeError(
-            operator, "Operands must be numbers"
-        )
+        raise LangRuntimeError(operator, "Operands must be numbers")
 
     def eval(self, expr: Expr | Stmt):
         return expr.accept(self)
@@ -144,5 +218,5 @@ class Interpreter(ExprVisitor, StmtVisitor):
         if isinstance(expr, bool):
             return str(expr).lower()
         if isinstance(expr, str):
-            return f'"{expr}"'
+            return str(expr)
         return str(expr)

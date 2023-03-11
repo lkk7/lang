@@ -2,13 +2,14 @@ import sys
 
 from interpreter import Interpreter
 from parse import Parser
+from resolver import Resolver
 from runtime_err import LangRuntimeError
 from scanner import Scanner
 from tokens import Token, TokenType
 
 
 class Lang:
-    def __init__(self):
+    def __init__(self) -> None:
         self.had_error: bool = False
         self.had_runtime_error: bool = False
 
@@ -37,6 +38,12 @@ class Lang:
             return
 
         interpreter = Interpreter(self.runtime_err)
+        resolver = Resolver(interpreter, self.err_token)
+        resolver.resolve_stmts(statements)
+
+        if self.had_error:
+            return
+
         interpreter.interpret(statements)
 
     def err(self, line: int, msg: str):

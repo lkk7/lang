@@ -1,4 +1,4 @@
-from tokens import Token
+from parsing.tokens import Token
 
 
 class LangRuntimeError(RuntimeError):

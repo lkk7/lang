@@ -1,11 +1,11 @@
 import sys
 
-from interpreter import Interpreter
-from parse import Parser
-from resolver import Resolver
-from runtime_err import LangRuntimeError
-from scanner import Scanner
-from tokens import Token, TokenType
+from error.runtime_err import LangRuntimeError
+from parsing.parse import Parser
+from parsing.scanner import Scanner
+from parsing.tokens import Token, TokenType
+from runtime.interpreter import Interpreter
+from scope.resolver import Resolver
 
 
 class Lang:

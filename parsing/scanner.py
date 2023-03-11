@@ -1,6 +1,6 @@
 from typing import Any, Callable
 
-from tokens import KEYWORDS, Token, TokenType
+from parsing.tokens import KEYWORDS, Token, TokenType
 
 
 class Scanner:

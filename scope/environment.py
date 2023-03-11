@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from runtime_err import LangRuntimeError
-from tokens import Token
+from error.runtime_err import LangRuntimeError
+from parsing.tokens import Token
 
 
 class Environment(dict):
@@ -32,7 +32,7 @@ class Environment(dict):
     def get_ancestor(self, distance: int):
         env: Environment | None = self
         for _ in range(distance):
-            env = env.enclosing if env else None
+            env = env.enclosing if env is not None else None
         return env
 
     def __getitem__(self, key: Token):

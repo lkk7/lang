@@ -1,0 +1,8 @@
+var time = clock();
+var count = 0;
+for (var i = 0; i < 10000; i = i + 1) {
+    print "x";
+    count = count + 1;
+}
+print "Seconds passed:";
+print clock() - time;

@@ -1,30 +1,13 @@
 from enum import Enum, auto
 from typing import Callable, Iterable
-from ast_defs import (
-    Assign,
-    Binary,
-    Call,
-    Expr,
-    BlockStmt,
-    ExprVisitor,
-    ExpressionStmt,
-    FunctionStmt,
-    Grouping,
-    IfStmt,
-    Literal,
-    Logical,
-    PrintStmt,
-    ReturnStmt,
-    Stmt,
-    StmtVisitor,
-    Ternary,
-    Unary,
-    VarStmt,
-    Variable,
-    WhileStmt,
-)
-from interpreter import Interpreter
-from tokens import Token
+
+from asts.ast_defs import (Assign, Binary, BlockStmt, Call, Expr,
+                           ExpressionStmt, ExprVisitor, FunctionStmt, Grouping,
+                           IfStmt, Literal, Logical, PrintStmt, ReturnStmt,
+                           Stmt, StmtVisitor, Ternary, Unary, Variable,
+                           VarStmt, WhileStmt)
+from parsing.tokens import Token
+from runtime.interpreter import Interpreter
 
 
 class FuncType(Enum):

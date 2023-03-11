@@ -1,27 +1,10 @@
 from typing import Callable
 
-from ast_defs import (
-    Assign,
-    Binary,
-    BlockStmt,
-    Call,
-    Expr,
-    ExpressionStmt,
-    FunctionStmt,
-    Grouping,
-    IfStmt,
-    Literal,
-    Logical,
-    PrintStmt,
-    ReturnStmt,
-    Stmt,
-    Ternary,
-    Unary,
-    Variable,
-    VarStmt,
-    WhileStmt,
-)
-from tokens import Token, TokenType
+from asts.ast_defs import (Assign, Binary, BlockStmt, Call, Expr,
+                           ExpressionStmt, FunctionStmt, Grouping, IfStmt,
+                           Literal, Logical, PrintStmt, ReturnStmt, Stmt,
+                           Ternary, Unary, Variable, VarStmt, WhileStmt)
+from parsing.tokens import Token, TokenType
 
 
 class ParseError(SyntaxError):

@@ -1,13 +1,14 @@
 from __future__ import annotations
-from typing import Any, TYPE_CHECKING
 
-from ast_defs import FunctionStmt
-from callable_obj import CallableObj
-from environment import Environment
-from return_val import ReturnVal
+from typing import TYPE_CHECKING, Any
+
+from asts.ast_defs import FunctionStmt
+from error.return_val import ReturnVal
+from function.callable_obj import CallableObj
+from scope.environment import Environment
 
 if TYPE_CHECKING:
-    from interpreter import Interpreter
+    from runtime.interpreter import Interpreter
 
 
 class FunctionObj(CallableObj):

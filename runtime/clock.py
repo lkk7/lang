@@ -1,8 +1,12 @@
-from time import time
-from typing import Any
+from __future__ import annotations
 
-from callable_obj import CallableObj
-from interpreter import Interpreter
+from time import time
+from typing import TYPE_CHECKING, Any
+
+from function.callable_obj import CallableObj
+
+if TYPE_CHECKING:
+    from runtime.interpreter import Interpreter
 
 
 class Clock(CallableObj):

@@ -1,36 +1,18 @@
-from typing import Any, Callable, cast
 import builtins
+from typing import Any, Callable, cast
 
-from ast_defs import (
-    Assign,
-    Binary,
-    BlockStmt,
-    Call,
-    Expr,
-    ExpressionStmt,
-    ExprVisitor,
-    FunctionStmt,
-    Grouping,
-    IfStmt,
-    Literal,
-    Logical,
-    PrintStmt,
-    ReturnStmt,
-    Stmt,
-    StmtVisitor,
-    Ternary,
-    Unary,
-    Variable,
-    VarStmt,
-    WhileStmt,
-)
-
-from callable_obj import CallableObj
-from environment import Environment
-from function import FunctionObj
-from return_val import ReturnVal
-from runtime_err import LangRuntimeError
-from tokens import Token, TokenType
+from asts.ast_defs import (Assign, Binary, BlockStmt, Call, Expr,
+                           ExpressionStmt, ExprVisitor, FunctionStmt, Grouping,
+                           IfStmt, Literal, Logical, PrintStmt, ReturnStmt,
+                           Stmt, StmtVisitor, Ternary, Unary, Variable,
+                           VarStmt, WhileStmt)
+from error.return_val import ReturnVal
+from error.runtime_err import LangRuntimeError
+from function.callable_obj import CallableObj
+from function.function import FunctionObj
+from parsing.tokens import Token, TokenType
+from runtime.clock import Clock
+from scope.environment import Environment
 
 
 class Interpreter(ExprVisitor, StmtVisitor):
@@ -39,7 +21,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.locals: dict[Expr, int] = {}
         self.environment = self.globals
         self.on_error = on_error
-        self.globals.define("clock", CallableObj())
+        self.globals.define("clock", Clock())
 
     def interpret(self, statements: list[Stmt]):
         try:
@@ -55,7 +37,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.execute_block(stmt.statements, Environment(self.environment))
         return None
 
-    def execute_block(self, statements: tuple[Stmt, ...], environment: Environment):
+    def execute_block(
+        self, statements: tuple[Stmt, ...], environment: Environment
+    ):
         previous = self.environment
         try:
             self.environment = environment

@@ -1,10 +1,10 @@
 from __future__ import annotations
-from abc import ABC
-from typing import Any, TYPE_CHECKING
 
+from abc import ABC
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from interpreter import Interpreter
+    from runtime.interpreter import Interpreter
 
 
 class CallableObj(ABC):

@@ -90,7 +90,7 @@ class StmtVisitor(ABC):
         raise NotImplementedError
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Ternary(Expr):
     operator: Token
     first: Expr
@@ -101,7 +101,7 @@ class Ternary(Expr):
         return visitor.visit_ternary(self)
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Binary(Expr):
     left: Expr
     operator: Token
@@ -111,7 +111,7 @@ class Binary(Expr):
         return visitor.visit_binary(self)
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Grouping(Expr):
     expression: Expr
 
@@ -119,7 +119,7 @@ class Grouping(Expr):
         return visitor.visit_grouping(self)
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Literal(Expr):
     value: Any
 
@@ -127,7 +127,7 @@ class Literal(Expr):
         return visitor.visit_literal(self)
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Unary(Expr):
     operator: Token
     right: Expr
@@ -136,7 +136,7 @@ class Unary(Expr):
         return visitor.visit_unary(self)
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Variable(Expr):
     name: Token
 
@@ -144,7 +144,7 @@ class Variable(Expr):
         return visitor.visit_variable(self)
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Assign(Expr):
     name: Token
     value: Expr
@@ -153,7 +153,7 @@ class Assign(Expr):
         return visitor.visit_assign(self)
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Logical(Expr):
     left: Expr
     operator: Token
@@ -163,42 +163,42 @@ class Logical(Expr):
         return visitor.visit_logical(self)
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Call(Expr):
     callee: Expr
     paren: Token
-    arguments: list[Expr]
+    arguments: tuple[Expr, ...]
 
     def accept(self, visitor: ExprVisitor):
         return visitor.visit_call(self)
 
 
-@dataclass
-class BlockStmt(Expr):
-    statements: list[Stmt]
+@dataclass(eq=True, frozen=True)
+class BlockStmt(Stmt):
+    statements: tuple[Stmt, ...]
 
     def accept(self, visitor: StmtVisitor):
         return visitor.visit_blockstmt(self)
 
 
-@dataclass
-class ExpressionStmt(Expr):
+@dataclass(eq=True, frozen=True)
+class ExpressionStmt(Stmt):
     expression: Expr
 
     def accept(self, visitor: StmtVisitor):
         return visitor.visit_expressionstmt(self)
 
 
-@dataclass
-class PrintStmt(Expr):
+@dataclass(eq=True, frozen=True)
+class PrintStmt(Stmt):
     expression: Expr
 
     def accept(self, visitor: StmtVisitor):
         return visitor.visit_printstmt(self)
 
 
-@dataclass
-class VarStmt(Expr):
+@dataclass(eq=True, frozen=True)
+class VarStmt(Stmt):
     name: Token
     initializer: Expr
 
@@ -206,8 +206,8 @@ class VarStmt(Expr):
         return visitor.visit_varstmt(self)
 
 
-@dataclass
-class IfStmt(Expr):
+@dataclass(eq=True, frozen=True)
+class IfStmt(Stmt):
     condition: Expr
     then_branch: Stmt
     else_branch: Stmt
@@ -216,8 +216,8 @@ class IfStmt(Expr):
         return visitor.visit_ifstmt(self)
 
 
-@dataclass
-class WhileStmt(Expr):
+@dataclass(eq=True, frozen=True)
+class WhileStmt(Stmt):
     condition: Expr
     body: Stmt
 
@@ -225,18 +225,18 @@ class WhileStmt(Expr):
         return visitor.visit_whilestmt(self)
 
 
-@dataclass
-class FunctionStmt(Expr):
+@dataclass(eq=True, frozen=True)
+class FunctionStmt(Stmt):
     name: Token
-    params: list[Token]
-    body: list[Stmt]
+    params: tuple[Token, ...]
+    body: tuple[Stmt, ...]
 
     def accept(self, visitor: StmtVisitor):
         return visitor.visit_functionstmt(self)
 
 
-@dataclass
-class ReturnStmt(Expr):
+@dataclass(eq=True, frozen=True)
+class ReturnStmt(Stmt):
     keyword: Token
     val: Expr
 

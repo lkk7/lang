@@ -1,4 +1,5 @@
 from typing import Any, Callable, cast
+import builtins
 
 from ast_defs import (
     Assign,
@@ -33,8 +34,9 @@ from tokens import Token, TokenType
 
 
 class Interpreter(ExprVisitor, StmtVisitor):
-    def __init__(self, on_error: Callable[[Exception], None]):
+    def __init__(self, on_error: Callable[[LangRuntimeError], None]):
         self.globals = Environment()
+        self.locals: dict[Expr, int] = {}
         self.environment = self.globals
         self.on_error = on_error
         self.globals.define("clock", CallableObj())
@@ -53,7 +55,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.execute_block(stmt.statements, Environment(self.environment))
         return None
 
-    def execute_block(self, statements: list[Stmt], environment: Environment):
+    def execute_block(self, statements: tuple[Stmt, ...], environment: Environment):
         previous = self.environment
         try:
             self.environment = environment
@@ -81,7 +83,11 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_assign(self, expr: Assign):
         val = self.eval(expr.value)
-        self.environment.assign(expr.name, val)
+        if expr in self.locals:
+            self.environment.assign_at(self.locals[expr], expr.name, val)
+        else:
+            self.globals.assign(expr.name, val)
+
         return val
 
     def visit_varstmt(self, stmt: VarStmt):
@@ -135,11 +141,21 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 self.check_num_operands(expr.operator, left, right)
                 return left - right
             case TokenType.PLUS:
-                if (type(left) == str and type(right) == str) or (
-                    (type(left) == int or type(left) == float)
-                    and (type(right) == int or type(right) == float)
-                ):
-                    return left + right
+                match type(left), type(right):
+                    case [builtins.float, builtins.float] | [
+                        builtins.str,
+                        builtins.str,
+                    ] | [
+                        builtins.int,
+                        builtins.int,
+                    ] | [
+                        builtins.int,
+                        builtins.float,
+                    ] | [
+                        builtins.float,
+                        builtins.int,
+                    ]:
+                        return left + right
                 raise LangRuntimeError(
                     expr.operator,
                     "Operands must be two numbers or two strings.",
@@ -177,7 +193,12 @@ class Interpreter(ExprVisitor, StmtVisitor):
         return None
 
     def visit_variable(self, expr: Variable):
-        return self.environment[expr.name]
+        return self.lookup_variable(expr.name, expr)
+
+    def lookup_variable(self, name: Token, expr: Expr):
+        if expr in self.locals:
+            return self.environment.get_at(self.locals[expr], name)
+        return self.globals[name]
 
     def visit_call(self, expr: Call):
         args = []
@@ -185,9 +206,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
             args.append(self.eval(arg))
         function = cast(CallableObj, self.eval(expr.callee))
         if not isinstance(function, CallableObj):
-            raise LangRuntimeError(expr.paren)
+            raise LangRuntimeError(expr.paren, "Non-callable called")
         if len(args) != function.arity():
-            raise RuntimeError(
+            raise LangRuntimeError(
                 expr.paren,
                 f"Expected {function.arity()} arguments but got {len(args)}",
             )
@@ -220,3 +241,6 @@ class Interpreter(ExprVisitor, StmtVisitor):
         if isinstance(expr, str):
             return str(expr)
         return str(expr)
+
+    def resolve(self, expr: Expr, depth: int):
+        self.locals[expr] = depth

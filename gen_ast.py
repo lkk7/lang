@@ -12,17 +12,21 @@ expressions: dict[str, list[str]] = {
     "Variable": ["name: Token"],
     "Assign": ["name: Token", "value: Expr"],
     "Logical": ["left: Expr", "operator: Token", "right: Expr"],
-    "Call": ["callee: Expr", "paren: Token", "arguments: list[Expr]"],
+    "Call": ["callee: Expr", "paren: Token", "arguments: tuple[Expr, ...]"],
 }
 
 statements: dict[str, list[str]] = {
-    "BlockStmt": ["statements: list[Stmt]"],
+    "BlockStmt": ["statements: tuple[Stmt, ...]"],
     "ExpressionStmt": ["expression: Expr"],
     "PrintStmt": ["expression: Expr"],
     "VarStmt": ["name: Token", "initializer: Expr"],
     "IfStmt": ["condition: Expr", "then_branch: Stmt", "else_branch: Stmt"],
     "WhileStmt": ["condition: Expr", "body: Stmt"],
-    "FunctionStmt": ["name: Token", "params: list[Token]", "body: list[Stmt]"],
+    "FunctionStmt": [
+        "name: Token",
+        "params: tuple[Token, ...]",
+        "body: tuple[Stmt, ...]",
+    ],
     "ReturnStmt": ["keyword: Token", "val: Expr"],
 }
 
@@ -62,7 +66,10 @@ class AstGenerator:
 
     def gen_ast(self, name: str, specs: dict[str, list[str]]):
         for expr, fields in specs.items():
-            expr_definition = "\n\n@dataclass\n" f"class {expr}(Expr):\n"
+            expr_definition = (
+                "\n\n@dataclass(eq=True, frozen=True)\n"
+                f"class {expr}({name}):\n"
+            )
             for field in fields:
                 expr_definition += f"    {field}\n"
             expr_definition += (

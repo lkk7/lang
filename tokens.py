@@ -58,7 +58,7 @@ class TokenType(Enum):
         return self.name
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Token:
     type: TokenType
     lexeme: str

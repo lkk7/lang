@@ -1,0 +1,12 @@
+fun f(x) {
+  fun g(y) {
+    fun h(z) {
+      return x * y * z;
+    }
+    return h;
+  }
+  return g;
+}
+
+var result = f(1)(2)(3);
+print result;

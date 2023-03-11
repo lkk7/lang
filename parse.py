@@ -36,7 +36,7 @@ class Parser:
         self.on_error = on_error
         self.current = 0
 
-    def parse(self):
+    def parse(self) -> list[Stmt]:
         statements: list[Stmt] = []
         while not self.is_end():
             statements.append(self.decl_stmt())
@@ -143,7 +143,7 @@ class Parser:
         while not self.check(TokenType.RIGHT_BRACE) and not self.is_end():
             statements.append(self.decl_stmt())
         self.consume(TokenType.RIGHT_BRACE, "Expected '}' at after block")
-        return statements
+        return tuple(statements)
 
     def expr_stmt(self):
         expr = self.expression()
@@ -172,7 +172,7 @@ class Parser:
         self.consume(TokenType.RIGHT_PAREN, "Expected ')' after parameters")
         self.consume(TokenType.LEFT_BRACE, f"Expected '{{' before {kind} body")
         body = self.block()
-        return FunctionStmt(name, parameters, body)
+        return FunctionStmt(name, tuple(parameters), body)
 
     def print_stmt(self):
         expr = self.expression()
@@ -276,7 +276,7 @@ class Parser:
         return expr
 
     def finish_call(self, callee: Expr):
-        args = []
+        args: list[Expr] = []
         if not self.check(TokenType.RIGHT_PAREN):
             args.append(self.expression())
             while self.match(TokenType.COMMA):
@@ -288,7 +288,7 @@ class Parser:
         paren = self.consume(
             TokenType.RIGHT_PAREN, "Expected ')' after arguments"
         )
-        return Call(callee, paren, args)
+        return Call(callee, paren, tuple(args))
 
     def primary(self):
         if self.match(TokenType.FALSE):

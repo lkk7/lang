@@ -35,6 +35,9 @@ class Environment(dict):
             env = env.enclosing if env is not None else None
         return env
 
+    def get_this(self) -> Any:
+        return super().__getitem__("this")
+
     def __getitem__(self, key: Token):
         try:
             return super().__getitem__(key.lexeme)

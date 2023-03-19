@@ -22,11 +22,19 @@ class Stmt(ABC):
 
 class ExprVisitor(ABC):
     @abstractmethod
-    def visit_ternary(self, expr: Ternary):
+    def visit_assign(self, expr: Assign):
         raise NotImplementedError
 
     @abstractmethod
     def visit_binary(self, expr: Binary):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_call(self, expr: Call):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_get(self, expr: Get):
         raise NotImplementedError
 
     @abstractmethod
@@ -38,23 +46,27 @@ class ExprVisitor(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def visit_logical(self, expr: Logical):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_set(self, expr: Set):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_ternary(self, expr: Ternary):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_this(self, expr: This):
+        raise NotImplementedError
+
+    @abstractmethod
     def visit_unary(self, expr: Unary):
         raise NotImplementedError
 
     @abstractmethod
     def visit_variable(self, expr: Variable):
-        raise NotImplementedError
-
-    @abstractmethod
-    def visit_assign(self, expr: Assign):
-        raise NotImplementedError
-
-    @abstractmethod
-    def visit_logical(self, expr: Logical):
-        raise NotImplementedError
-
-    @abstractmethod
-    def visit_call(self, expr: Call):
         raise NotImplementedError
 
 
@@ -64,23 +76,11 @@ class StmtVisitor(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def visit_classstmt(self, stmt: ClassStmt):
+        raise NotImplementedError
+
+    @abstractmethod
     def visit_expressionstmt(self, stmt: ExpressionStmt):
-        raise NotImplementedError
-
-    @abstractmethod
-    def visit_printstmt(self, stmt: PrintStmt):
-        raise NotImplementedError
-
-    @abstractmethod
-    def visit_varstmt(self, stmt: VarStmt):
-        raise NotImplementedError
-
-    @abstractmethod
-    def visit_ifstmt(self, stmt: IfStmt):
-        raise NotImplementedError
-
-    @abstractmethod
-    def visit_whilestmt(self, stmt: WhileStmt):
         raise NotImplementedError
 
     @abstractmethod
@@ -88,19 +88,33 @@ class StmtVisitor(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def visit_ifstmt(self, stmt: IfStmt):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_printstmt(self, stmt: PrintStmt):
+        raise NotImplementedError
+
+    @abstractmethod
     def visit_returnstmt(self, stmt: ReturnStmt):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_varstmt(self, stmt: VarStmt):
+        raise NotImplementedError
+
+    @abstractmethod
+    def visit_whilestmt(self, stmt: WhileStmt):
         raise NotImplementedError
 
 
 @dataclass(eq=False, frozen=True)
-class Ternary(Expr):
-    operator: Token
-    first: Expr
-    second: Expr
-    third: Expr
+class Assign(Expr):
+    name: Token
+    value: Expr
 
     def accept(self, visitor: ExprVisitor):
-        return visitor.visit_ternary(self)
+        return visitor.visit_assign(self)
 
 
 @dataclass(eq=False, frozen=True)
@@ -111,6 +125,25 @@ class Binary(Expr):
 
     def accept(self, visitor: ExprVisitor):
         return visitor.visit_binary(self)
+
+
+@dataclass(eq=False, frozen=True)
+class Call(Expr):
+    callee: Expr
+    paren: Token
+    arguments: tuple[Expr, ...]
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visit_call(self)
+
+
+@dataclass(eq=False, frozen=True)
+class Get(Expr):
+    obj: Expr
+    name: Token
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visit_get(self)
 
 
 @dataclass(eq=False, frozen=True)
@@ -127,6 +160,45 @@ class Literal(Expr):
 
     def accept(self, visitor: ExprVisitor):
         return visitor.visit_literal(self)
+
+
+@dataclass(eq=False, frozen=True)
+class Logical(Expr):
+    left: Expr
+    operator: Token
+    right: Expr
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visit_logical(self)
+
+
+@dataclass(eq=False, frozen=True)
+class Set(Expr):
+    obj: Expr
+    name: Token
+    value: Expr
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visit_set(self)
+
+
+@dataclass(eq=False, frozen=True)
+class Ternary(Expr):
+    operator: Token
+    first: Expr
+    second: Expr
+    third: Expr
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visit_ternary(self)
+
+
+@dataclass(eq=False, frozen=True)
+class This(Expr):
+    keyword: Token
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visit_this(self)
 
 
 @dataclass(eq=False, frozen=True)
@@ -147,35 +219,6 @@ class Variable(Expr):
 
 
 @dataclass(eq=False, frozen=True)
-class Assign(Expr):
-    name: Token
-    value: Expr
-
-    def accept(self, visitor: ExprVisitor):
-        return visitor.visit_assign(self)
-
-
-@dataclass(eq=False, frozen=True)
-class Logical(Expr):
-    left: Expr
-    operator: Token
-    right: Expr
-
-    def accept(self, visitor: ExprVisitor):
-        return visitor.visit_logical(self)
-
-
-@dataclass(eq=False, frozen=True)
-class Call(Expr):
-    callee: Expr
-    paren: Token
-    arguments: tuple[Expr, ...]
-
-    def accept(self, visitor: ExprVisitor):
-        return visitor.visit_call(self)
-
-
-@dataclass(eq=False, frozen=True)
 class BlockStmt(Stmt):
     statements: tuple[Stmt, ...]
 
@@ -184,47 +227,20 @@ class BlockStmt(Stmt):
 
 
 @dataclass(eq=False, frozen=True)
+class ClassStmt(Stmt):
+    name: Token
+    methods: tuple[FunctionStmt, ...]
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_classstmt(self)
+
+
+@dataclass(eq=False, frozen=True)
 class ExpressionStmt(Stmt):
     expression: Expr
 
     def accept(self, visitor: StmtVisitor):
         return visitor.visit_expressionstmt(self)
-
-
-@dataclass(eq=False, frozen=True)
-class PrintStmt(Stmt):
-    expression: Expr
-
-    def accept(self, visitor: StmtVisitor):
-        return visitor.visit_printstmt(self)
-
-
-@dataclass(eq=False, frozen=True)
-class VarStmt(Stmt):
-    name: Token
-    initializer: Expr
-
-    def accept(self, visitor: StmtVisitor):
-        return visitor.visit_varstmt(self)
-
-
-@dataclass(eq=False, frozen=True)
-class IfStmt(Stmt):
-    condition: Expr
-    then_branch: Stmt
-    else_branch: Stmt
-
-    def accept(self, visitor: StmtVisitor):
-        return visitor.visit_ifstmt(self)
-
-
-@dataclass(eq=False, frozen=True)
-class WhileStmt(Stmt):
-    condition: Expr
-    body: Stmt
-
-    def accept(self, visitor: StmtVisitor):
-        return visitor.visit_whilestmt(self)
 
 
 @dataclass(eq=False, frozen=True)
@@ -238,9 +254,45 @@ class FunctionStmt(Stmt):
 
 
 @dataclass(eq=False, frozen=True)
+class IfStmt(Stmt):
+    condition: Expr
+    then_branch: Stmt
+    else_branch: Stmt
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_ifstmt(self)
+
+
+@dataclass(eq=False, frozen=True)
+class PrintStmt(Stmt):
+    expression: Expr
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_printstmt(self)
+
+
+@dataclass(eq=False, frozen=True)
 class ReturnStmt(Stmt):
     keyword: Token
-    val: Expr
+    val: Expr | None
 
     def accept(self, visitor: StmtVisitor):
         return visitor.visit_returnstmt(self)
+
+
+@dataclass(eq=False, frozen=True)
+class VarStmt(Stmt):
+    name: Token
+    initializer: Expr
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_varstmt(self)
+
+
+@dataclass(eq=False, frozen=True)
+class WhileStmt(Stmt):
+    condition: Expr
+    body: Stmt
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_whilestmt(self)

@@ -1,11 +1,33 @@
 from enum import Enum, auto
 from typing import Callable, Iterable
 
-from asts.ast_defs import (Assign, Binary, BlockStmt, Call, Expr,
-                           ExpressionStmt, ExprVisitor, FunctionStmt, Grouping,
-                           IfStmt, Literal, Logical, PrintStmt, ReturnStmt,
-                           Stmt, StmtVisitor, Ternary, Unary, Variable,
-                           VarStmt, WhileStmt)
+from asts.ast_defs import (
+    Assign,
+    Binary,
+    BlockStmt,
+    Call,
+    ClassStmt,
+    Expr,
+    ExpressionStmt,
+    ExprVisitor,
+    FunctionStmt,
+    Get,
+    Grouping,
+    IfStmt,
+    Literal,
+    Logical,
+    PrintStmt,
+    ReturnStmt,
+    Set,
+    Stmt,
+    StmtVisitor,
+    Ternary,
+    This,
+    Unary,
+    Variable,
+    VarStmt,
+    WhileStmt,
+)
 from parsing.tokens import Token
 from runtime.interpreter import Interpreter
 
@@ -13,6 +35,13 @@ from runtime.interpreter import Interpreter
 class FuncType(Enum):
     NONE = auto()
     FUNCTION = auto()
+    INITIALIZER = auto()
+    METHOD = auto()
+
+
+class ClassType(Enum):
+    NONE = auto()
+    CLASS = auto()
 
 
 class Resolver(ExprVisitor, StmtVisitor):
@@ -23,12 +52,12 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.interpreter = interpreter
         self.on_error = on_error
         self.current_func = FuncType.NONE
+        self.current_class = ClassType.NONE
 
     def visit_blockstmt(self, stmt: BlockStmt):
         self.begin_scope()
         self.resolve_stmts(stmt.statements)
         self.end_scope()
-        return None
 
     def resolve_stmts(self, stmts: Iterable[Stmt]):
         for stmt in stmts:
@@ -51,7 +80,6 @@ class Resolver(ExprVisitor, StmtVisitor):
         if stmt.initializer is not None:
             self.resolve_expr(stmt.initializer)
         self.define(stmt.name)
-        return None
 
     def declare(self, name: Token):
         if len(self.scopes) == 0:
@@ -77,6 +105,10 @@ class Resolver(ExprVisitor, StmtVisitor):
                 expr.name, "Can't read local variable in its own initializer"
             )
         self.resolve_local(expr, expr.name)
+
+    def visit_set(self, expr: Set):
+        self.resolve_expr(expr.value)
+        self.resolve_expr(expr.obj)
 
     def resolve_local(self, expr: Expr, name: Token):
         for i in range(len(self.scopes) - 1, -1, -1):
@@ -104,6 +136,29 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.end_scope()
         self.current_func = enclosing_func
 
+    def visit_classstmt(self, stmt: ClassStmt):
+        enclosing_class = self.current_class
+        self.current_class = ClassType.CLASS
+
+        self.declare(stmt.name)
+        self.define(stmt.name)
+
+        self.begin_scope()
+        self.scopes[-1]["this"] = True
+        for method in stmt.methods:
+            self.resolve_function(
+                method,
+                FuncType.METHOD
+                if method.name.lexeme != "init"
+                else FuncType.INITIALIZER,
+            )
+        self.end_scope()
+
+        self.current_class = enclosing_class
+
+    def visit_get(self, expr: Get):
+        self.resolve_expr(expr.obj)
+
     def visit_expressionstmt(self, stmt: ExpressionStmt):
         self.resolve_expr(stmt.expression)
 
@@ -118,8 +173,16 @@ class Resolver(ExprVisitor, StmtVisitor):
 
     def visit_returnstmt(self, stmt: ReturnStmt):
         if self.current_func == FuncType.NONE:
-            self.on_error(stmt.keyword, "Found 'return' not inside a function")
-        self.resolve_expr(stmt.val)
+            self.on_error(
+                stmt.keyword, "Found 'return' outside of a function scope"
+            )
+        if stmt.val is not None:
+            if self.current_func == FuncType.INITIALIZER:
+                self.on_error(
+                    stmt.keyword,
+                    "Found non-empty 'return' inside an init method",
+                )
+            self.resolve_expr(stmt.val)
 
     def visit_whilestmt(self, stmt: WhileStmt):
         self.resolve_expr(stmt.condition)
@@ -151,3 +214,9 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.resolve_expr(expr.first)
         self.resolve_expr(expr.second)
         self.resolve_expr(expr.third)
+
+    def visit_this(self, expr: This):
+        if self.current_class == ClassType.NONE:
+            self.on_error(expr.keyword, "'this' expression outside of a class")
+            return
+        self.resolve_local(expr, expr.keyword)

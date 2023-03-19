@@ -1,11 +1,35 @@
 import builtins
 from typing import Any, Callable, cast
 
-from asts.ast_defs import (Assign, Binary, BlockStmt, Call, Expr,
-                           ExpressionStmt, ExprVisitor, FunctionStmt, Grouping,
-                           IfStmt, Literal, Logical, PrintStmt, ReturnStmt,
-                           Stmt, StmtVisitor, Ternary, Unary, Variable,
-                           VarStmt, WhileStmt)
+from asts.ast_defs import (
+    Assign,
+    Binary,
+    BlockStmt,
+    Call,
+    ClassStmt,
+    Expr,
+    ExpressionStmt,
+    ExprVisitor,
+    FunctionStmt,
+    Grouping,
+    Get,
+    IfStmt,
+    Literal,
+    Logical,
+    PrintStmt,
+    ReturnStmt,
+    Set,
+    Stmt,
+    StmtVisitor,
+    Ternary,
+    This,
+    Unary,
+    Variable,
+    VarStmt,
+    WhileStmt,
+)
+from classes.classdef import ClassObj
+from classes.instance import InstanceObj
 from error.return_val import ReturnVal
 from error.runtime_err import LangRuntimeError
 from function.callable_obj import CallableObj
@@ -49,7 +73,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
             self.environment = previous
 
     def visit_functionstmt(self, stmt: FunctionStmt):
-        function = FunctionObj(stmt, self.environment)
+        function = FunctionObj(stmt, self.environment, False)
         self.environment.define(stmt.name.lexeme, function)
         return None
 
@@ -81,6 +105,26 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.environment.define(stmt.name.lexeme, value)
         return None
 
+    def visit_classstmt(self, stmt: ClassStmt):
+        self.environment.define(stmt.name.lexeme, None)
+        methods: dict[str, FunctionObj] = {}
+        for method in stmt.methods:
+            func = FunctionObj(
+                method, self.environment, method.name.lexeme == "init"
+            )
+            methods[method.name.lexeme] = func
+        class_obj = ClassObj(stmt.name.lexeme, methods)
+        self.environment.assign(stmt.name, class_obj)
+
+    def visit_this(self, expr: This):
+        return self.lookup_variable(expr.keyword, expr)
+
+    def visit_get(self, expr: Get):
+        obj = self.eval(expr.obj)
+        if isinstance(obj, InstanceObj):
+            return obj.get(expr.name)
+        raise LangRuntimeError(expr.name, "Only instances have properties")
+
     def visit_expressionstmt(self, stmt: ExpressionStmt):
         self.eval(stmt.expression)
         return None
@@ -110,6 +154,13 @@ class Interpreter(ExprVisitor, StmtVisitor):
             if not left:
                 return left
         return self.eval(expr.right)
+
+    def visit_set(self, expr: Set):
+        obj = self.eval(expr.obj)
+        if not isinstance(obj, InstanceObj):
+            raise LangRuntimeError(expr.name, "Only instances have fields")
+        val = self.eval(expr.value)
+        obj.set(expr.name, val)
 
     def visit_binary(self, expr: Binary):
         left = self.eval(expr.left)

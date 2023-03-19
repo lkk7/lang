@@ -1,0 +1,24 @@
+class MyClass {
+  init(x) {
+    this.x = x;
+  }
+
+  show() {
+    print "x = " + this.x;
+  }
+}
+
+var myInstance = MyClass("a");
+myInstance.show();
+
+myInstance.x = "b";
+myInstance.show();
+
+myInstance.init("c");
+myInstance.show();
+
+var init = myInstance.init;
+init("d");
+myInstance.show();
+
+print "x = " + init("e").x;

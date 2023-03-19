@@ -1,9 +1,30 @@
 from typing import Callable
 
-from asts.ast_defs import (Assign, Binary, BlockStmt, Call, Expr,
-                           ExpressionStmt, FunctionStmt, Grouping, IfStmt,
-                           Literal, Logical, PrintStmt, ReturnStmt, Stmt,
-                           Ternary, Unary, Variable, VarStmt, WhileStmt)
+from asts.ast_defs import (
+    Assign,
+    Binary,
+    BlockStmt,
+    Call,
+    ClassStmt,
+    Expr,
+    ExpressionStmt,
+    FunctionStmt,
+    Get,
+    Grouping,
+    IfStmt,
+    Literal,
+    Logical,
+    PrintStmt,
+    ReturnStmt,
+    Set,
+    Stmt,
+    Ternary,
+    This,
+    Unary,
+    Variable,
+    VarStmt,
+    WhileStmt,
+)
 from parsing.tokens import Token, TokenType
 
 
@@ -31,6 +52,8 @@ class Parser:
                 return self.var_declaration()
             if self.match(TokenType.FUN):
                 return self.function_stmt("function")
+            if self.match(TokenType.CLASS):
+                return self.class_declaration()
             return self.statement()
         except ParseError:
             self.synchronize()
@@ -128,6 +151,15 @@ class Parser:
         self.consume(TokenType.RIGHT_BRACE, "Expected '}' at after block")
         return tuple(statements)
 
+    def class_declaration(self):
+        name = self.consume(TokenType.IDENTIFIER, "Expected class name")
+        self.consume(TokenType.LEFT_BRACE, "Expected '{' before class body")
+        methods: list[FunctionStmt] = []
+        while not self.check(TokenType.RIGHT_BRACE) and not self.is_end():
+            methods.append(self.function_stmt("method"))
+        self.consume(TokenType.RIGHT_BRACE, "Expected '}' after class body")
+        return ClassStmt(name, tuple(methods))
+
     def expr_stmt(self):
         expr = self.expression()
         self.consume(TokenType.SEMICOLON, "Expected ';' after expression")
@@ -173,6 +205,8 @@ class Parser:
             val = self.assignment()
             if isinstance(expr, Variable):
                 return Assign(expr.name, val)
+            elif isinstance(expr, Get):
+                return Set(expr.obj, expr.name, val)
             self.error(equals, "Invalid assignment target")
         return expr
 
@@ -254,6 +288,11 @@ class Parser:
         while True:
             if self.match(TokenType.LEFT_PAREN):
                 expr = self.finish_call(expr)
+            elif self.match(TokenType.DOT):
+                name = self.consume(
+                    TokenType.IDENTIFIER, "Expected property name after '.'"
+                )
+                expr = Get(expr, name)
             else:
                 break
         return expr
@@ -276,18 +315,21 @@ class Parser:
     def primary(self):
         if self.match(TokenType.FALSE):
             return Literal(False)
-        if self.match(TokenType.TRUE):
-            return Literal(True)
-        if self.match(TokenType.NIL):
-            return Literal(None)
-        if self.match(TokenType.NUMBER, TokenType.STRING):
-            return Literal(self.previous().literal)
         if self.match(TokenType.IDENTIFIER):
             return Variable(self.previous())
         if self.match(TokenType.LEFT_PAREN):
             expr = self.expression()
             self.consume(TokenType.RIGHT_PAREN, "Expected ')' after expression")
             return Grouping(expr)
+        if self.match(TokenType.NIL):
+            return Literal(None)
+        if self.match(TokenType.NUMBER, TokenType.STRING):
+            return Literal(self.previous().literal)
+        if self.match(TokenType.THIS):
+            return This(self.previous())
+        if self.match(TokenType.TRUE):
+            return Literal(True)
+
         raise self.error(self.peek(), "Expected expression")
 
     def consume(self, type: TokenType, msg: str):

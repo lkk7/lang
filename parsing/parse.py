@@ -58,7 +58,6 @@ class Parser:
             return self.statement()
         except ParseError:
             self.synchronize()
-            return None
 
     def statement(self):
         if self.match(TokenType.PRINT):

@@ -60,7 +60,6 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_blockstmt(self, stmt: BlockStmt):
         self.execute_block(stmt.statements, Environment(self.environment))
-        return None
 
     def execute_block(
         self, statements: tuple[Stmt, ...], environment: Environment
@@ -76,19 +75,16 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visit_functionstmt(self, stmt: FunctionStmt):
         function = FunctionObj(stmt, self.environment, False)
         self.environment.define(stmt.name.lexeme, function)
-        return None
 
     def visit_ifstmt(self, stmt: IfStmt):
         if self.eval(stmt.condition):
             self.execute(stmt.then_branch)
         elif stmt.else_branch:
             self.execute(stmt.else_branch)
-        return None
 
     def visit_whilestmt(self, stmt: WhileStmt):
         while self.eval(stmt.condition):
             self.execute(stmt.body)
-        return None
 
     def visit_assign(self, expr: Assign):
         val = self.eval(expr.value)
@@ -104,7 +100,6 @@ class Interpreter(ExprVisitor, StmtVisitor):
         if stmt.initializer is not None:
             value = self.eval(stmt.initializer)
         self.environment.define(stmt.name.lexeme, value)
-        return None
 
     def visit_classstmt(self, stmt: ClassStmt):
         superclass: ClassObj | None = None
@@ -157,12 +152,10 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_expressionstmt(self, stmt: ExpressionStmt):
         self.eval(stmt.expression)
-        return None
 
     def visit_printstmt(self, stmt: PrintStmt):
         val = self.eval(stmt.expression)
         print(self.stringify(val))
-        return None
 
     def visit_returnstmt(self, stmt: ReturnStmt):
         val = None
@@ -242,8 +235,6 @@ class Interpreter(ExprVisitor, StmtVisitor):
             case TokenType.EQUAL_EQUAL:
                 return left == right
 
-        return None
-
     def visit_grouping(self, expr: Grouping):
         return self.eval(expr.expression)
 
@@ -255,7 +246,6 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 return -val
             case TokenType.BANG:
                 return not bool(val)
-        return None
 
     def visit_variable(self, expr: Variable):
         return self.lookup_variable(expr.name, expr)

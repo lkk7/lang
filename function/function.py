@@ -40,7 +40,6 @@ class FunctionObj(CallableObj):
             )
         if self.is_initializer:
             return self.closure.get_sure("this")
-        return None
 
     def bind(self, instance: InstanceObj):
         env = Environment(self.closure)

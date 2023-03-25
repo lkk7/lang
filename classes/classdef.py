@@ -38,7 +38,6 @@ class ClassObj(CallableObj):
             return self.methods[name]
         if self.superclass is not None:
             return self.superclass.find_method(name)
-        return None
 
     def __str__(self) -> str:
         return f"<class {self.name}>"

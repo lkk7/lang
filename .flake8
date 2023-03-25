@@ -1,5 +1,4 @@
 [flake8]
+exclude = __pycache__, .mypy_cache
 ignore = E203, E211, W503
-import-order-style = google
-max-line-length = 80
-exclude = __pycache__,.mypy_cache
+max_line_length = 80

@@ -1,0 +1,5 @@
+[tool.black]
+line-length = 80
+
+[tool.mypy]
+explicit_package_bases = true

@@ -21,6 +21,7 @@ from asts.ast_defs import (
     Set,
     Stmt,
     StmtVisitor,
+    Super,
     Ternary,
     This,
     Unary,
@@ -106,18 +107,47 @@ class Interpreter(ExprVisitor, StmtVisitor):
         return None
 
     def visit_classstmt(self, stmt: ClassStmt):
+        superclass: ClassObj | None = None
+        if stmt.superclass is not None:
+            superclass = self.eval(stmt.superclass)
+            if not isinstance(superclass, ClassObj):
+                raise LangRuntimeError("Superclass must be a class")
         self.environment.define(stmt.name.lexeme, None)
+        if stmt.superclass is not None:
+            self.environment = Environment(self.environment)
+            self.environment.define("super", superclass)
         methods: dict[str, FunctionObj] = {}
         for method in stmt.methods:
             func = FunctionObj(
                 method, self.environment, method.name.lexeme == "init"
             )
             methods[method.name.lexeme] = func
-        class_obj = ClassObj(stmt.name.lexeme, methods)
+        class_obj = ClassObj(
+            stmt.name.lexeme,
+            superclass,
+            methods,
+        )
+        if superclass is not None:
+            self.environment = self.environment.enclosing
         self.environment.assign(stmt.name, class_obj)
 
     def visit_this(self, expr: This):
         return self.lookup_variable(expr.keyword, expr)
+
+    def visit_super(self, expr: Super):
+        distance = self.locals[expr]
+        superclass: ClassObj = self.environment.get_ancestor(distance).get_sure(
+            "super"
+        )
+        obj: InstanceObj = self.environment.get_ancestor(distance - 1).get_sure(
+            "this"
+        )
+        method = superclass.find_method(expr.method.lexeme)
+        if method is None:
+            raise LangRuntimeError(
+                expr.method, f"Undefined property {expr.method.lexeme}"
+            )
+        return method.bind(obj)
 
     def visit_get(self, expr: Get):
         obj = self.eval(expr.obj)

@@ -18,6 +18,7 @@ from asts.ast_defs import (
     ReturnStmt,
     Set,
     Stmt,
+    Super,
     Ternary,
     This,
     Unary,
@@ -153,12 +154,16 @@ class Parser:
 
     def class_declaration(self):
         name = self.consume(TokenType.IDENTIFIER, "Expected class name")
+        superclass: Variable | None = None
+        if self.match(TokenType.LESS):
+            self.consume(TokenType.IDENTIFIER, "Expected superclass name")
+            superclass = Variable(self.previous())
         self.consume(TokenType.LEFT_BRACE, "Expected '{' before class body")
         methods: list[FunctionStmt] = []
         while not self.check(TokenType.RIGHT_BRACE) and not self.is_end():
             methods.append(self.function_stmt("method"))
         self.consume(TokenType.RIGHT_BRACE, "Expected '}' after class body")
-        return ClassStmt(name, tuple(methods))
+        return ClassStmt(name, superclass, tuple(methods))
 
     def expr_stmt(self):
         expr = self.expression()
@@ -325,6 +330,13 @@ class Parser:
             return Literal(None)
         if self.match(TokenType.NUMBER, TokenType.STRING):
             return Literal(self.previous().literal)
+        if self.match(TokenType.SUPER):
+            keyword = self.previous()
+            self.consume(TokenType.DOT, "Expected '.' after 'super'")
+            method = self.consume(
+                TokenType.IDENTIFIER, "Expected superclass method name"
+            )
+            return Super(keyword, method)
         if self.match(TokenType.THIS):
             return This(self.previous())
         if self.match(TokenType.TRUE):

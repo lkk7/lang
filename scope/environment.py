@@ -23,20 +23,21 @@ class Environment(dict):
             return
         raise LangRuntimeError(name, f"Undefined variable {name.lexeme}")
 
-    def assign_at(self, distance: int, name: Token, val: Any):
-        self.get_ancestor(distance)[name.lexeme] = val
-
-    def get_at(self, distance: int, name: Token):
-        return self.get_ancestor(distance)[name]
-
     def get_ancestor(self, distance: int):
         env: Environment | None = self
         for _ in range(distance):
             env = env.enclosing if env is not None else None
         return env
 
-    def get_this(self) -> Any:
-        return super().__getitem__("this")
+    def assign_at(self, distance: int, name: Token, val: Any):
+        self.get_ancestor(distance)[name.lexeme] = val
+
+    def get_at(self, distance: int, name: Token):
+        return self.get_ancestor(distance)[name]
+
+    def get_sure(self, key: str):
+        """Get an item by key WITHOUT any error handling."""
+        return super().__getitem__(key)
 
     def __getitem__(self, key: Token):
         try:

@@ -36,10 +36,10 @@ class FunctionObj(CallableObj):
             return (
                 ret_val.val
                 if not self.is_initializer
-                else self.closure.get_this()
+                else self.closure.get_sure("this")
             )
         if self.is_initializer:
-            return self.closure.get_this()
+            return self.closure.get_sure("this")
         return None
 
     def bind(self, instance: InstanceObj):

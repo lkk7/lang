@@ -7,6 +7,7 @@ expressions: dict[str, list[str]] = {
     "Literal": ["value: Any"],
     "Logical": ["left: Expr", "operator: Token", "right: Expr"],
     "Set": ["obj: Expr", "name: Token", "value: Expr"],
+    "Super": ["keyword: Token", "method: Token"],
     "Ternary": [
         "operator: Token",
         "first: Expr",
@@ -20,7 +21,11 @@ expressions: dict[str, list[str]] = {
 
 statements: dict[str, list[str]] = {
     "BlockStmt": ["statements: tuple[Stmt, ...]"],
-    "ClassStmt": ["name: Token", "methods: tuple[FunctionStmt, ...]"],
+    "ClassStmt": [
+        "name: Token",
+        "superclass: Variable | None",
+        "methods: tuple[FunctionStmt, ...]",
+    ],
     "ExpressionStmt": ["expression: Expr"],
     "FunctionStmt": [
         "name: Token",

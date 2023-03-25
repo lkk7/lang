@@ -13,8 +13,11 @@ if TYPE_CHECKING:
 
 
 class ClassObj(CallableObj):
-    def __init__(self, name: str, methods: dict[str, FunctionObj]):
+    def __init__(
+        self, name: str, superclass: ClassObj, methods: dict[str, FunctionObj]
+    ):
         self.name = name
+        self.superclass = superclass
         self.methods = methods
 
     def call(self, interpreter: Interpreter, arguments: list[Any]) -> Any:
@@ -30,9 +33,11 @@ class ClassObj(CallableObj):
             return 0
         return initializer.arity()
 
-    def find_method(self, name: str):
+    def find_method(self, name: str) -> FunctionObj | None:
         if name in self.methods:
             return self.methods[name]
+        if self.superclass is not None:
+            return self.superclass.find_method(name)
         return None
 
     def __str__(self) -> str:

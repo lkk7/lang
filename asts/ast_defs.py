@@ -54,6 +54,10 @@ class ExprVisitor(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def visit_super(self, expr: Super):
+        raise NotImplementedError
+
+    @abstractmethod
     def visit_ternary(self, expr: Ternary):
         raise NotImplementedError
 
@@ -183,6 +187,15 @@ class Set(Expr):
 
 
 @dataclass(eq=False, frozen=True)
+class Super(Expr):
+    keyword: Token
+    method: Token
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visit_super(self)
+
+
+@dataclass(eq=False, frozen=True)
 class Ternary(Expr):
     operator: Token
     first: Expr
@@ -229,6 +242,7 @@ class BlockStmt(Stmt):
 @dataclass(eq=False, frozen=True)
 class ClassStmt(Stmt):
     name: Token
+    superclass: Variable | None
     methods: tuple[FunctionStmt, ...]
 
     def accept(self, visitor: StmtVisitor):

@@ -21,6 +21,7 @@ from asts.ast_defs import (
     Set,
     Stmt,
     StmtVisitor,
+    Super,
     Ternary,
     This,
     Unary,
@@ -42,6 +43,7 @@ class FuncType(Enum):
 class ClassType(Enum):
     NONE = auto()
     CLASS = auto()
+    SUBCLASS = auto()
 
 
 class Resolver(ExprVisitor, StmtVisitor):
@@ -143,7 +145,15 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.declare(stmt.name)
         self.define(stmt.name)
 
-        self.begin_scope()
+        if stmt.superclass is not None:
+            if stmt.name.lexeme == stmt.superclass.name.lexeme:
+                self.on_error("A class inheriting from itself is forbidden")
+            self.current_class = ClassType.SUBCLASS
+            self.resolve_expr(stmt.superclass)
+            self.begin_scope()  # 'super' scope
+            self.scopes[-1]["super"] = True
+
+        self.begin_scope()  # 'this' scope
         self.scopes[-1]["this"] = True
         for method in stmt.methods:
             self.resolve_function(
@@ -152,9 +162,18 @@ class Resolver(ExprVisitor, StmtVisitor):
                 if method.name.lexeme != "init"
                 else FuncType.INITIALIZER,
             )
-        self.end_scope()
+        self.end_scope()  # 'this' scope
+        if stmt.superclass is not None:
+            self.end_scope()  # 'super' scope
 
         self.current_class = enclosing_class
+
+    def visit_super(self, expr: Super):
+        if self.current_class == ClassType.NONE:
+            self.on_error(expr.keyword, "'super' outside of a class")
+        elif self.current_class != ClassType.SUBCLASS:
+            self.on_error(expr.keyword, "'super' in a class with no superclass")
+        self.resolve_local(expr, expr.keyword)
 
     def visit_get(self, expr: Get):
         self.resolve_expr(expr.obj)

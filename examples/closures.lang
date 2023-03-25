@@ -1,8 +1,8 @@
 fun complicated(a) {
     fun f(b) {
-        fun g(x) {
-            fun h(y) {
-                return a * b * x * y;
+        fun g(c) {
+            fun h(d) {
+                return a * b * c * d;
             }
             return h;
         }

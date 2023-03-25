@@ -1,0 +1,25 @@
+class A {
+  init(x) {
+    print "A initializer";
+    this.x = x;
+  }
+
+  test() {
+    print "A method";
+  }
+}
+
+class B < A {
+  test() {
+    super.test();
+    print "B method";
+  }
+}
+
+class C < B {}
+
+class D < C {}
+
+var instance = D("1");
+instance.test();
+print instance.x;

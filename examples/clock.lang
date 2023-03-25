@@ -1,7 +1,15 @@
-var time = clock();
-var count = 0;
-for (var i = 0; i < 10000; i = i + 1) {
-    count = count + 1;
+fun doSomething() {
+    var a = 1;
+    for (var i = 0; i < 100000; i = i + 1) {
+        a = a + 1;
+    }
 }
+
+print "Starting the task";
+var time = clock();
+doSomething();
+time = clock() - time;
+print "Task completed";
+
 print "Seconds passed:";
-print clock() - time;
+print time;

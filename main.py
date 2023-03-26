@@ -15,36 +15,58 @@ class Lang:
 
     def run_file(self, filename: str):
         with open(filename, "r") as file:
-            bytes = file.read()
-        self.run(bytes)
-        if self.had_error:
-            sys.exit(65)
-        if self.had_runtime_error:
-            sys.exit(70)
+            source = file.read()
 
-    def run_prompt(self):
-        for line in sys.stdin:
-            self.run(line.rstrip())
-            self.had_error = False
-            self.had_runtime_error = False
-
-    def run(self, source: str):
         scanner = Scanner(source, self.err)
         tokens = scanner.scan_tokens()
         parser = Parser(tokens, self.err_token)
         statements = parser.parse()
 
         if self.had_error:
-            return
+            sys.exit(65)
 
         interpreter = Interpreter(self.runtime_err)
         resolver = Resolver(interpreter, self.err_token)
         resolver.resolve_stmts(statements)
 
         if self.had_error:
-            return
+            sys.exit(65)
 
         interpreter.interpret(statements)
+
+        if self.had_runtime_error:
+            sys.exit(70)
+
+    def run_prompt(self):
+        interpreter = Interpreter(self.runtime_err)
+        resolver = Resolver(interpreter, self.err_token)
+
+        code: str = ""
+        for line in sys.stdin:
+            if line[-2:] == " \n":
+                code += line
+                continue
+            else:
+                code += line
+
+            self.had_error = False
+
+            statements = Parser(
+                Scanner(code, self.err).scan_tokens(), self.err_token
+            ).parse()
+
+            if self.had_error:
+                code = ""
+                continue
+
+            resolver.resolve_stmts(statements)
+
+            if self.had_error:
+                code = ""
+                continue
+
+            interpreter.interpret(statements)
+            code = ""
 
     def err(self, line: int, msg: str):
         self.report_err(line, "", msg)

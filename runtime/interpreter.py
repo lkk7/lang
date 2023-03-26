@@ -102,28 +102,31 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.environment.define(stmt.name.lexeme, value)
 
     def visit_classstmt(self, stmt: ClassStmt):
-        superclass: ClassObj | None = None
-        if stmt.superclass is not None:
-            superclass = self.eval(stmt.superclass)
-            if not isinstance(superclass, ClassObj):
-                raise LangRuntimeError("Superclass must be a class")
+        superclass: ClassObj | None = (
+            self.eval(stmt.superclass) if stmt.superclass else None
+        )
+        if superclass and not isinstance(superclass, ClassObj):
+            raise LangRuntimeError(stmt.name, "Superclass must be a class")
+
         self.environment.define(stmt.name.lexeme, None)
-        if stmt.superclass is not None:
+        if superclass:
             self.environment = Environment(self.environment)
             self.environment.define("super", superclass)
-        methods: dict[str, FunctionObj] = {}
-        for method in stmt.methods:
-            func = FunctionObj(
+
+        methods = {
+            method.name.lexeme: FunctionObj(
                 method, self.environment, method.name.lexeme == "init"
             )
-            methods[method.name.lexeme] = func
+            for method in stmt.methods
+        }
+
         class_obj = ClassObj(
             stmt.name.lexeme,
             superclass,
             methods,
         )
-        if superclass is not None:
-            self.environment = self.environment.enclosing
+        if superclass:
+            self.environment = cast(Environment, self.environment.enclosing)
         self.environment.assign(stmt.name, class_obj)
 
     def visit_this(self, expr: This):
@@ -253,7 +256,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def lookup_variable(self, name: Token, expr: Expr):
         if expr in self.locals:
             return self.environment.get_at(self.locals[expr], name)
-        return self.globals[name]
+        return self.globals.get(name)
 
     def visit_call(self, expr: Call):
         args = []

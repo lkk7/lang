@@ -32,10 +32,14 @@ statements: dict[str, list[str]] = {
         "params: tuple[Token, ...]",
         "body: tuple[Stmt, ...]",
     ],
-    "IfStmt": ["condition: Expr", "then_branch: Stmt", "else_branch: Stmt"],
+    "IfStmt": [
+        "condition: Expr",
+        "then_branch: Stmt",
+        "else_branch: Stmt | None",
+    ],
     "PrintStmt": ["expression: Expr"],
     "ReturnStmt": ["keyword: Token", "val: Expr | None"],
-    "VarStmt": ["name: Token", "initializer: Expr"],
+    "VarStmt": ["name: Token", "initializer: Expr | None"],
     "WhileStmt": ["condition: Expr", "body: Stmt"],
 }
 

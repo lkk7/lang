@@ -147,7 +147,9 @@ class Resolver(ExprVisitor, StmtVisitor):
 
         if stmt.superclass is not None:
             if stmt.name.lexeme == stmt.superclass.name.lexeme:
-                self.on_error("A class inheriting from itself is forbidden")
+                self.on_error(
+                    stmt.name, "A class inheriting from itself is forbidden"
+                )
             self.current_class = ClassType.SUBCLASS
             self.resolve_expr(stmt.superclass)
             self.begin_scope()  # 'super' scope

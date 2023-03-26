@@ -14,7 +14,10 @@ if TYPE_CHECKING:
 
 class ClassObj(CallableObj):
     def __init__(
-        self, name: str, superclass: ClassObj, methods: dict[str, FunctionObj]
+        self,
+        name: str,
+        superclass: ClassObj | None,
+        methods: dict[str, FunctionObj],
     ):
         self.name = name
         self.superclass = superclass
@@ -38,6 +41,7 @@ class ClassObj(CallableObj):
             return self.methods[name]
         if self.superclass is not None:
             return self.superclass.find_method(name)
+        return None
 
     def __str__(self) -> str:
         return f"<class {self.name}>"

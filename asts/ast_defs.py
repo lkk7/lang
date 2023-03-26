@@ -271,7 +271,7 @@ class FunctionStmt(Stmt):
 class IfStmt(Stmt):
     condition: Expr
     then_branch: Stmt
-    else_branch: Stmt
+    else_branch: Stmt | None
 
     def accept(self, visitor: StmtVisitor):
         return visitor.visit_ifstmt(self)
@@ -297,7 +297,7 @@ class ReturnStmt(Stmt):
 @dataclass(eq=False, frozen=True)
 class VarStmt(Stmt):
     name: Token
-    initializer: Expr
+    initializer: Expr | None
 
     def accept(self, visitor: StmtVisitor):
         return visitor.visit_varstmt(self)

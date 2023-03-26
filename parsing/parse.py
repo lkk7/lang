@@ -79,7 +79,7 @@ class Parser:
         condition = self.expression()
         self.consume(TokenType.RIGHT_PAREN, "Expected ')' after 'if' condition")
         then_branch = self.statement()
-        else_branch = None
+        else_branch: Stmt | None = None
         if self.match(TokenType.ELSE):
             else_branch = self.statement()
         return IfStmt(condition, then_branch, else_branch)
@@ -115,20 +115,20 @@ class Parser:
 
         body = self.statement()
         if increment is not None:
-            body = BlockStmt([body, ExpressionStmt(increment)])
+            body = BlockStmt(tuple([body, ExpressionStmt(increment)]))
 
         if condition is None:
             condition = Literal(True)
         body = WhileStmt(condition, body)
 
         if initializer is not None:
-            body = BlockStmt([initializer, body])
+            body = BlockStmt(tuple([initializer, body]))
 
         return body
 
     def var_declaration(self):
         name = self.consume(TokenType.IDENTIFIER, "Expected variable name")
-        initializer = None
+        initializer: Expr | None = None
         if self.match(TokenType.EQUAL):
             initializer = self.expression()
         self.consume(

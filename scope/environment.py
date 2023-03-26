@@ -6,17 +6,18 @@ from error.runtime_err import LangRuntimeError
 from parsing.tokens import Token
 
 
-class Environment(dict):
+class Environment:
     def __init__(self, enclosing: Optional[Environment] = None):
         super().__init__()
         self.enclosing = enclosing
+        self.values: dict[str, Any] = {}
 
     def define(self, name: str, value: Any):
-        self[name] = value
+        self.values[name] = value
 
     def assign(self, name: Token, val: Any):
-        if name.lexeme in self:
-            self[name.lexeme] = val
+        if name.lexeme in self.values:
+            self.values[name.lexeme] = val
             return
         if self.enclosing is not None:
             self.enclosing.assign(name, val)
@@ -30,19 +31,19 @@ class Environment(dict):
         return env
 
     def assign_at(self, distance: int, name: Token, val: Any):
-        self.get_ancestor(distance)[name.lexeme] = val
+        self.get_ancestor(distance).values[name.lexeme] = val
+
+    def get(self, key: Token):
+        try:
+            return self.values[key.lexeme]
+        except KeyError:
+            if self.enclosing is not None:
+                return self.enclosing.values[key.lexeme]
+            raise LangRuntimeError(key, f"Undefined variable '{key.lexeme}'")
 
     def get_at(self, distance: int, name: Token):
-        return self.get_ancestor(distance)[name]
+        return self.get_ancestor(distance).values[name.lexeme]
 
     def get_sure(self, key: str):
         """Get an item by key WITHOUT any error handling."""
-        return super().__getitem__(key)
-
-    def __getitem__(self, key: Token):
-        try:
-            return super().__getitem__(key.lexeme)
-        except KeyError:
-            if self.enclosing is not None:
-                return self.enclosing[key]
-            raise LangRuntimeError(key, f"Undefined variable '{key.lexeme}'")
+        return self.values[key]

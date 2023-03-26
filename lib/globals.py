@@ -1,20 +1,18 @@
 from __future__ import annotations
 
-from time import time
 from typing import TYPE_CHECKING, Any
 
-from function.callable_obj import CallableObj
+from lib.native_func import NativeFunc
+
 
 if TYPE_CHECKING:
     from runtime.interpreter import Interpreter
 
 
-class Clock(CallableObj):
+class PrintGlobals(NativeFunc):
     def arity(self) -> int:
         return 0
 
     def call(self, interpreter: Interpreter, arguments: list[Any]) -> Any:
-        return time()
-
-    def __str__(self):
-        return "<native fn>"
+        for name, obj in interpreter.globals.values.items():
+            print(f"{name}: {interpreter.stringify(obj)}")

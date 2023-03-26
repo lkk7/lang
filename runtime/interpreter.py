@@ -36,8 +36,8 @@ from error.runtime_err import LangRuntimeError
 from function.callable_obj import CallableObj
 from function.function import FunctionObj
 from parsing.tokens import Token, TokenType
-from runtime.clock import Clock
 from scope.environment import Environment
+import lib
 
 
 class Interpreter(ExprVisitor, StmtVisitor):
@@ -46,7 +46,8 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.locals: dict[Expr, int] = {}
         self.environment = self.globals
         self.on_error = on_error
-        self.globals.define("clock", Clock())
+        for key, cls in lib.exports.items():
+            self.globals.define(key, cls(key))
 
     def interpret(self, statements: list[Stmt]):
         try:

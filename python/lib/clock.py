@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any
 
 from lib.native_func import NativeFunc
 
-
 if TYPE_CHECKING:
     from runtime.interpreter import Interpreter
 

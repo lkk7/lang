@@ -5,3 +5,6 @@ line-length = 80
 check_untyped_defs = true
 disallow_any_generics = true
 explicit_package_bases = true
+
+[tool.isort]
+profile = "black"

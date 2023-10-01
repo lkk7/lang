@@ -1,6 +1,7 @@
 import builtins
 from typing import Any, Callable, cast
 
+import lib
 from asts.ast_defs import (
     Assign,
     Binary,
@@ -11,8 +12,8 @@ from asts.ast_defs import (
     ExpressionStmt,
     ExprVisitor,
     FunctionStmt,
-    Grouping,
     Get,
+    Grouping,
     IfStmt,
     Literal,
     Logical,
@@ -37,7 +38,6 @@ from function.callable_obj import CallableObj
 from function.function import FunctionObj
 from parsing.tokens import Token, TokenType
 from scope.environment import Environment
-import lib
 
 
 class Interpreter(ExprVisitor, StmtVisitor):
@@ -278,13 +278,13 @@ class Interpreter(ExprVisitor, StmtVisitor):
         return expr.value
 
     def check_num_operand(self, operator: Token, operand: Any):
-        if type(operand) == int or type(operand) == float:
+        if isinstance(operand, int) or isinstance(operand, float):
             return
         raise LangRuntimeError(operator, "Operand must be a number")
 
     def check_num_operands(self, operator: Token, left: Any, right: Any):
-        if (type(left) == int or type(left) == float) and (
-            type(right) == int or type(right) == float
+        if (isinstance(left, int) or isinstance(left, float)) and (
+            isinstance(right, int) or isinstance(right, float)
         ):
             return
         raise LangRuntimeError(operator, "Operands must be numbers")

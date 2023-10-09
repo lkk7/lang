@@ -19,7 +19,10 @@ endif()
 
 add_library(
     lang_lib OBJECT
-    source/lib.c
+    source/bytecode.c
+    source/debug.c
+    source/memory.c
+    source/value.c
 )
 target_include_directories(
     lang_lib

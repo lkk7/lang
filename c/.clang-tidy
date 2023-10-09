@@ -4,11 +4,11 @@ Checks: "-*,\
   clang-analyzer-*,\
   cert-*,\
   bugprone-*,\
-  concurrency-*,\
   misc-*,\
   portability-*,\
   openmp-*,\
-  readability-*"
+  readability-*,\
+  -bugprone-easily-swappable-parameters"
 WarningsAsErrors: ''
 CheckOptions:
   - key: 'bugprone-argument-comment.StrictMode'

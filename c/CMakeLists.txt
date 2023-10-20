@@ -23,6 +23,7 @@ add_library(
     source/debug.c
     source/memory.c
     source/value.c
+    source/vm.c
 )
 target_include_directories(
     lang_lib

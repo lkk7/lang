@@ -38,6 +38,16 @@ int disassemble_instr(ByteSequence *seq, int offset) {
   switch (instr) {
     case OP_RETURN:
       return simple_instr("OP_RETURN", offset);
+    case OP_ADD:
+      return simple_instr("OP_ADD", offset);
+    case OP_SUBTRACT:
+      return simple_instr("OP_SUBTRACT", offset);
+    case OP_MULTIPLY:
+      return simple_instr("OP_MULTIPLY", offset);
+    case OP_DIVIDE:
+      return simple_instr("OP_DIVIDE", offset);
+    case OP_NEGATE:
+      return simple_instr("OP_NEGATE", offset);
     case OP_CONSTANT:
       return const_instr("OP_CONSTANT", seq, offset);
     default:

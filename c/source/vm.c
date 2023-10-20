@@ -4,6 +4,7 @@
 
 #include "bytecode.h"
 #include "common.h"
+#include "compile.h"
 #include "debug.h"
 #include "value.h"
 
@@ -67,10 +68,9 @@ static InterpretResult run(void) {
   }
 }
 
-InterpretResult interpret(ByteSequence* seq) {
-  vm.seq = seq;
-  vm.ip = seq->code;
-  return run();
+InterpretResult interpret(const char* src) {
+  compile(src);
+  return INTERPRET_OK;
 }
 
 void push(Value val) {

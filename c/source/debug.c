@@ -48,8 +48,22 @@ int disassemble_instr(ByteSequence *seq, int offset) {
       return simple_instr("OP_DIVIDE", offset);
     case OP_NEGATE:
       return simple_instr("OP_NEGATE", offset);
+    case OP_NOT:
+      return simple_instr("OP_NOT", offset);
     case OP_CONSTANT:
       return const_instr("OP_CONSTANT", seq, offset);
+    case OP_NIL:
+      return simple_instr("OP_NIL", offset);
+    case OP_TRUE:
+      return simple_instr("OP_TRUE", offset);
+    case OP_FALSE:
+      return simple_instr("OP_FALSE", offset);
+    case OP_EQUAL:
+      return simple_instr("OP_EQUAL", offset);
+    case OP_GREATER:
+      return simple_instr("OP_GREATER", offset);
+    case OP_LESS:
+      return simple_instr("OP_LESS", offset);
     default:
       printf("Unknown opcode %d\n", instr);
       return offset + 1;

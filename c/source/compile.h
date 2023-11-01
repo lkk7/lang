@@ -1,3 +1,5 @@
 #pragma once
 
-void compile(const char* src);
+#include "bytecode.h"
+
+bool compile(const char* src, ByteSequence* seq);

@@ -23,6 +23,7 @@ add_library(
     source/compile.c
     source/debug.c
     source/memory.c
+    source/object.c
     source/scanner.c
     source/value.c
     source/vm.c

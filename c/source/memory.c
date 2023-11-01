@@ -2,6 +2,9 @@
 
 #include <stdlib.h>
 
+#include "object.h"
+#include "vm.h"
+
 void* reallocate(void* ptr, size_t old_size, size_t new_size) {
   (void)old_size;
   if (new_size == 0) {
@@ -14,4 +17,24 @@ void* reallocate(void* ptr, size_t old_size, size_t new_size) {
     exit(1);
   }
   return memory;
+}
+
+static void free_object(Obj* object) {
+  switch (object->type) {
+    case OBJ_STR: {
+      ObjStr* string = (ObjStr*)object;
+      FREE_ARR(char, string->chars, string->length + 1);
+      FREE(ObjStr, object);
+      break;
+    }
+  }
+}
+
+void free_objects() {
+  Obj* obj = vm.objects;
+  while (obj != NULL) {
+    Obj* next = obj->next;
+    free_object(obj);
+    obj = next;
+  }
 }

@@ -25,6 +25,7 @@ add_library(
     source/memory.c
     source/object.c
     source/scanner.c
+    source/table.c
     source/value.c
     source/vm.c
 )

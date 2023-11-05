@@ -9,6 +9,7 @@
 #include "compile.h"
 #include "debug.h"
 #include "memory.h"
+#include "table.h"
 #include "value.h"
 
 VM vm;
@@ -34,7 +35,7 @@ static bool is_falsey(Value value) {
   return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
-static void concat_str() {
+static void concat_str(void) {
   ObjStr* b = AS_STR(pop());
   ObjStr* a = AS_STR(pop());
 
@@ -51,14 +52,19 @@ static void concat_str() {
 void init_vm(void) {
   reset_stack();
   vm.objects = NULL;
+  init_table(&vm.globals);
+  init_table(&vm.strings);
 }
 
 void free_vm(void) {
+  free_table(&vm.strings);
+  free_table(&vm.globals);
   free_objects();
 }
 
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.seq->consts.vals[READ_BYTE()])
+#define READ_STR() AS_STR(READ_CONSTANT())
 #define BINARY_OP(value_type, op)                     \
   do {                                                \
     if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) { \
@@ -98,6 +104,33 @@ static InterpretResult run(void) {
       case OP_FALSE:
         push(BOOL_VAL(false));
         break;
+      case OP_POP:
+        pop();
+        break;
+      case OP_GET_GLOBAL: {
+        ObjStr* name = READ_STR();
+        Value value;
+        if (!table_get(&vm.globals, name, &value)) {
+          runtime_error("Undefined variable '%s'", name->chars);
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        push(value);
+        break;
+      }
+      case OP_DEFINE_GLOBAL: {
+        ObjStr* name = READ_STR();
+        table_set(&vm.globals, name, peek(0));
+        break;
+      }
+      case OP_SET_GLOBAL: {
+        ObjStr* name = READ_STR();
+        if (table_set(&vm.globals, name, peek(0))) {
+          table_delete(&vm.globals, name);
+          runtime_error("Undefined variable '%s'.", name->chars);
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        break;
+      }
       case OP_EQUAL: {
         Value b = pop();
         Value a = pop();
@@ -142,9 +175,12 @@ static InterpretResult run(void) {
         }
         push(NUMBER_VAL(-AS_NUMBER(pop())));
         break;
-      case OP_RETURN: {
+      case OP_PRINT: {
         print_val(pop());
         printf("\n");
+        break;
+      }
+      case OP_RETURN: {
         return INTERPRET_OK;
       }
     }

@@ -18,10 +18,7 @@ bool are_equal(Value a, Value b) {
     case VAL_NUMBER:
       return AS_NUMBER(a) == AS_NUMBER(b);
     case VAL_OBJ: {
-      ObjStr* a_str = AS_STR(a);
-      ObjStr* b_str = AS_STR(b);
-      return a_str->length == b_str->length &&
-             memcmp(a_str->chars, b_str->chars, a_str->length) == 0;
+      return AS_OBJ(a) == AS_OBJ(b);
     }
     default:
       return false;

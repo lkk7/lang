@@ -36,6 +36,8 @@ int disassemble_instr(ByteSequence *seq, int offset) {
 
   uint8_t instr = seq->code[offset];
   switch (instr) {
+    case OP_PRINT:
+      return simple_instr("OP_PRINT", offset);
     case OP_RETURN:
       return simple_instr("OP_RETURN", offset);
     case OP_ADD:
@@ -58,6 +60,14 @@ int disassemble_instr(ByteSequence *seq, int offset) {
       return simple_instr("OP_TRUE", offset);
     case OP_FALSE:
       return simple_instr("OP_FALSE", offset);
+    case OP_POP:
+      return simple_instr("OP_POP", offset);
+    case OP_GET_GLOBAL:
+      return const_instr("OP_GET_GLOBAL", seq, offset);
+    case OP_DEFINE_GLOBAL:
+      return const_instr("OP_DEFINE_GLOBAL", seq, offset);
+    case OP_SET_GLOBAL:
+      return const_instr("OP_SET_GLOBAL", seq, offset);
     case OP_EQUAL:
       return simple_instr("OP_EQUAL", offset);
     case OP_GREATER:

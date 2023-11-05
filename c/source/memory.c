@@ -30,7 +30,7 @@ static void free_object(Obj* object) {
   }
 }
 
-void free_objects() {
+void free_objects(void) {
   Obj* obj = vm.objects;
   while (obj != NULL) {
     Obj* next = obj->next;

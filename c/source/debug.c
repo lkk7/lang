@@ -6,7 +6,7 @@
 #include "value.h"
 
 void disassemble_bseq(ByteSequence *seq, const char *name) {
-  printf("- %s -\n", name);
+  printf("--- %s ---\n", name);
 
   for (int offset = 0; offset < seq->size;) {
     offset = disassemble_instr(seq, offset);
@@ -16,6 +16,12 @@ void disassemble_bseq(ByteSequence *seq, const char *name) {
 static int simple_instr(const char *name, int offset) {
   printf("%s\n", name);
   return offset + 1;
+}
+
+static int byte_instr(const char *name, ByteSequence *seq, int offset) {
+  uint8_t slot = seq->code[offset + 1];
+  printf("%-16s %4d\n", name, slot);
+  return offset + 2;
 }
 
 static int const_instr(const char *name, ByteSequence *seq, int offset) {
@@ -62,6 +68,10 @@ int disassemble_instr(ByteSequence *seq, int offset) {
       return simple_instr("OP_FALSE", offset);
     case OP_POP:
       return simple_instr("OP_POP", offset);
+    case OP_GET_LOCAL:
+      return byte_instr("OP_GET_LOCAL", seq, offset);
+    case OP_SET_LOCAL:
+      return byte_instr("OP_SET_LOCAL", seq, offset);
     case OP_GET_GLOBAL:
       return const_instr("OP_GET_GLOBAL", seq, offset);
     case OP_DEFINE_GLOBAL:

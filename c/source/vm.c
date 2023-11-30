@@ -68,7 +68,7 @@ void free_vm(void) {
 #define BINARY_OP(value_type, op)                     \
   do {                                                \
     if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) { \
-      runtime_error("Operands must be numbers.");     \
+      runtime_error("Operands must be numbers");      \
       return INTERPRET_RUNTIME_ERROR;                 \
     }                                                 \
     double b = AS_NUMBER(pop());                      \
@@ -77,6 +77,9 @@ void free_vm(void) {
   } while (false)
 
 static InterpretResult run(void) {
+#ifdef DEBUG_TRACE_EXECUTION
+  printf("--- execution ---");
+#endif
   for (;;) {
 #ifdef DEBUG_TRACE_EXECUTION
     printf("          ");
@@ -107,6 +110,16 @@ static InterpretResult run(void) {
       case OP_POP:
         pop();
         break;
+      case OP_GET_LOCAL: {
+        uint8_t slot = READ_BYTE();
+        push(vm.stack[slot]);
+        break;
+      }
+      case OP_SET_LOCAL: {
+        uint8_t slot = READ_BYTE();
+        vm.stack[slot] = peek(0);
+        break;
+      }
       case OP_GET_GLOBAL: {
         ObjStr* name = READ_STR();
         Value value;
@@ -120,13 +133,14 @@ static InterpretResult run(void) {
       case OP_DEFINE_GLOBAL: {
         ObjStr* name = READ_STR();
         table_set(&vm.globals, name, peek(0));
+        pop();
         break;
       }
       case OP_SET_GLOBAL: {
         ObjStr* name = READ_STR();
         if (table_set(&vm.globals, name, peek(0))) {
           table_delete(&vm.globals, name);
-          runtime_error("Undefined variable '%s'.", name->chars);
+          runtime_error("Undefined variable '%s'", name->chars);
           return INTERPRET_RUNTIME_ERROR;
         }
         break;

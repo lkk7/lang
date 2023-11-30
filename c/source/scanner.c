@@ -244,5 +244,5 @@ Token scan_token(void) {
       return make_str_token();
   }
 
-  return error_token("Unexpected character.");
+  return error_token("Unexpected character");
 }

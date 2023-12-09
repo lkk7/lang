@@ -64,6 +64,7 @@ void free_vm(void) {
 
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.seq->consts.vals[READ_BYTE()])
+#define READ_SHORT() (vm.ip += 2, (uint16_t)((vm.ip[-2] << 8) | vm.ip[-1]))
 #define READ_STR() AS_STR(READ_CONSTANT())
 #define BINARY_OP(value_type, op)                     \
   do {                                                \
@@ -192,6 +193,23 @@ static InterpretResult run(void) {
       case OP_PRINT: {
         print_val(pop());
         printf("\n");
+        break;
+      }
+      case OP_JUMP: {
+        uint16_t offset = READ_SHORT();
+        vm.ip += offset;
+        break;
+      }
+      case OP_JUMP_IF_FALSE: {
+        uint16_t offset = READ_SHORT();
+        if (is_falsey(peek(0))) {
+          vm.ip += offset;
+        }
+        break;
+      }
+      case OP_LOOP: {
+        uint16_t offset = READ_SHORT();
+        vm.ip -= offset;
         break;
       }
       case OP_RETURN: {

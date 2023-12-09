@@ -24,6 +24,14 @@ static int byte_instr(const char *name, ByteSequence *seq, int offset) {
   return offset + 2;
 }
 
+static int jump_instr(const char *name, int sign, ByteSequence *bseq,
+                      int offset) {
+  uint16_t jump = (uint16_t)(bseq->code[offset + 1] << 8);
+  jump |= bseq->code[offset + 2];
+  printf("%-16s %4d -> %d\n", name, offset, offset + 3 + sign * jump);
+  return offset + 3;
+}
+
 static int const_instr(const char *name, ByteSequence *seq, int offset) {
   uint8_t const_offset = seq->code[offset + 1];
   printf("%-16s %4d '", name, const_offset);
@@ -44,6 +52,12 @@ int disassemble_instr(ByteSequence *seq, int offset) {
   switch (instr) {
     case OP_PRINT:
       return simple_instr("OP_PRINT", offset);
+    case OP_JUMP:
+      return jump_instr("OP_JUMP", 1, seq, offset);
+    case OP_JUMP_IF_FALSE:
+      return jump_instr("OP_JUMP_IF_FALSE", 1, seq, offset);
+    case OP_LOOP:
+      return jump_instr("OP_LOOP", -1, seq, offset);
     case OP_RETURN:
       return simple_instr("OP_RETURN", offset);
     case OP_ADD:

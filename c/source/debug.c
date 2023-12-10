@@ -58,6 +58,8 @@ int disassemble_instr(ByteSequence *seq, int offset) {
       return jump_instr("OP_JUMP_IF_FALSE", 1, seq, offset);
     case OP_LOOP:
       return jump_instr("OP_LOOP", -1, seq, offset);
+    case OP_CALL:
+      return byte_instr("OP_CALL", seq, offset);
     case OP_RETURN:
       return simple_instr("OP_RETURN", offset);
     case OP_ADD:

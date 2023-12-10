@@ -3,18 +3,27 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "bytecode.h"
 #include "common.h"
 #include "compile.h"
 #include "debug.h"
 #include "memory.h"
+#include "object.h"
 #include "table.h"
 #include "value.h"
 
 VM vm;
 
-static void reset_stack(void) { vm.top = vm.stack; }
+static Value clock_native(int argc, Value* args) {
+  return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
+}
+
+static void reset_stack(void) {
+  vm.top = vm.stack;
+  vm.frame_count = 0;
+}
 
 static void runtime_error(const char* format, ...) {
   va_list args;
@@ -23,13 +32,68 @@ static void runtime_error(const char* format, ...) {
   va_end(args);
   (void)fputs("\n", stderr);
 
-  size_t instruction = (size_t)(vm.ip - vm.seq->code - 1);
-  int line = vm.seq->lines[instruction];
-  (void)fprintf(stderr, "[line %d] in script\n", line);
+  for (int i = vm.frame_count - 1; i >= 0; i--) {
+    CallFrame* frame = &vm.frames[i];
+    ObjFunction* function = frame->function;
+    size_t instruction = frame->ip - function->bseq.code - 1;
+    (void)fprintf(stderr, "[line %d] in ", function->bseq.lines[instruction]);
+    if (function->name == NULL) {
+      (void)fprintf(stderr, "script\n");
+    } else {
+      (void)fprintf(stderr, "%s()\n", function->name->chars);
+    }
+  }
+
   reset_stack();
 }
 
+static void define_native(const char* name, NativeFn function) {
+  push(OBJ_VAL(copy_str(name, (int)strlen(name))));
+  push(OBJ_VAL(new_native(function)));
+  table_set(&vm.globals, AS_STR(vm.stack[0]), vm.stack[1]);
+  pop();
+  pop();
+}
+
 static Value peek(int distance) { return vm.top[-1 - distance]; }
+
+static bool call(ObjFunction* function, int argCount) {
+  if (argCount != function->arity) {
+    runtime_error("Expected %d arguments but got %d", function->arity,
+                  argCount);
+    return false;
+  }
+  if (vm.frame_count == FRAMES_MAX) {
+    runtime_error("Stack overflow");
+    return false;
+  }
+
+  CallFrame* frame = &vm.frames[vm.frame_count++];
+  frame->function = function;
+  frame->ip = function->bseq.code;
+  frame->slots = vm.top - argCount - 1;
+  return true;
+}
+
+static bool call_value(Value callee, int argCount) {
+  if (IS_OBJ(callee)) {
+    switch (OBJ_TYPE(callee)) {
+      case OBJ_FUNCTION:
+        return call(AS_FUNCTION(callee), argCount);
+      case OBJ_NATIVE: {
+        NativeFn native = AS_NATIVE(callee);
+        Value result = native(argCount, vm.top - argCount);
+        vm.top -= argCount + 1;
+        push(result);
+        return true;
+      }
+      default:
+        break;
+    }
+  }
+  runtime_error("Can only call functions and classes");
+  return false;
+}
 
 static bool is_falsey(Value value) {
   return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
@@ -54,6 +118,8 @@ void init_vm(void) {
   vm.objects = NULL;
   init_table(&vm.globals);
   init_table(&vm.strings);
+
+  define_native("clock", clock_native);
 }
 
 void free_vm(void) {
@@ -62,9 +128,10 @@ void free_vm(void) {
   free_objects();
 }
 
-#define READ_BYTE() (*vm.ip++)
-#define READ_CONSTANT() (vm.seq->consts.vals[READ_BYTE()])
-#define READ_SHORT() (vm.ip += 2, (uint16_t)((vm.ip[-2] << 8) | vm.ip[-1]))
+#define READ_BYTE() (*frame->ip++)
+#define READ_CONSTANT() (frame->function->bseq.consts.vals[READ_BYTE()])
+#define READ_SHORT() \
+  (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
 #define READ_STR() AS_STR(READ_CONSTANT())
 #define BINARY_OP(value_type, op)                     \
   do {                                                \
@@ -78,6 +145,7 @@ void free_vm(void) {
   } while (false)
 
 static InterpretResult run(void) {
+  CallFrame* frame = &vm.frames[vm.frame_count - 1];
 #ifdef DEBUG_TRACE_EXECUTION
   printf("--- execution ---");
 #endif
@@ -90,7 +158,8 @@ static InterpretResult run(void) {
       printf(" ]");
     }
     printf("\n");
-    disassemble_instr(vm.seq, (int)(vm.ip - vm.seq->code));
+    disassemble_instr(&frame->function->bseq,
+                      (int)(frame->ip - frame->function->bseq.code));
 #endif
     uint8_t instr;
     switch (instr = READ_BYTE()) {
@@ -113,12 +182,12 @@ static InterpretResult run(void) {
         break;
       case OP_GET_LOCAL: {
         uint8_t slot = READ_BYTE();
-        push(vm.stack[slot]);
+        push(frame->slots[slot]);
         break;
       }
       case OP_SET_LOCAL: {
         uint8_t slot = READ_BYTE();
-        vm.stack[slot] = peek(0);
+        frame->slots[slot] = peek(0);
         break;
       }
       case OP_GET_GLOBAL: {
@@ -197,43 +266,55 @@ static InterpretResult run(void) {
       }
       case OP_JUMP: {
         uint16_t offset = READ_SHORT();
-        vm.ip += offset;
+        frame->ip += offset;
         break;
       }
       case OP_JUMP_IF_FALSE: {
         uint16_t offset = READ_SHORT();
         if (is_falsey(peek(0))) {
-          vm.ip += offset;
+          frame->ip += offset;
         }
         break;
       }
       case OP_LOOP: {
         uint16_t offset = READ_SHORT();
-        vm.ip -= offset;
+        frame->ip -= offset;
+        break;
+      }
+      case OP_CALL: {
+        int arg_count = READ_BYTE();
+        if (!call_value(peek(arg_count), arg_count)) {
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        frame = &vm.frames[vm.frame_count - 1];
         break;
       }
       case OP_RETURN: {
-        return INTERPRET_OK;
+        Value result = pop();
+        vm.frame_count--;
+        if (vm.frame_count == 0) {
+          pop();
+          return INTERPRET_OK;
+        }
+        vm.top = frame->slots;
+        push(result);
+        frame = &vm.frames[vm.frame_count - 1];
+        break;
       }
     }
   }
 }
 
 InterpretResult interpret(const char* src) {
-  ByteSequence seq;
-  init_bsequence(&seq);
-
-  if (!compile(src, &seq)) {
-    free_bsequence(&seq);
+  ObjFunction* function = compile(src);
+  if (function == NULL) {
     return INTERPRET_COMPILE_ERROR;
   }
 
-  vm.seq = &seq;
-  vm.ip = seq.code;
-  InterpretResult result = run();
+  push(OBJ_VAL(function));
+  call(function, 0);
 
-  free_bsequence(&seq);
-  return result;
+  return run();
 }
 
 void push(Value val) {

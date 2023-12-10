@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bytecode.h"
 #include "memory.h"
 #include "table.h"
 #include "value.h"
@@ -17,6 +18,20 @@ static Obj* allocate_object(size_t size, ObjType type) {
   object->next = vm.objects;
   vm.objects = object;
   return object;
+}
+
+ObjFunction* new_function() {
+  ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
+  function->arity = 0;
+  function->name = NULL;
+  init_bsequence(&function->bseq);
+  return function;
+}
+
+ObjNative* new_native(NativeFn function) {
+  ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
+  native->function = function;
+  return native;
 }
 
 static ObjStr* allocate_str(char* chars, int length, uint32_t hash) {
@@ -59,10 +74,24 @@ ObjStr* copy_str(const char* chars, int length) {
   return allocate_str(heap_chars, length, hash);
 }
 
-void print_obj(Value value) {
-  switch (OBJ_TYPE(value)) {
+static void print_function(ObjFunction* f) {
+  if (f->name == NULL) {
+    printf("<script>");
+    return;
+  }
+  printf("<fn %s>", f->name->chars);
+}
+
+void print_obj(Value val) {
+  switch (OBJ_TYPE(val)) {
     case OBJ_STR:
-      printf("%s", AS_CSTR(value));
+      printf("%s", AS_CSTR(val));
+      break;
+    case OBJ_FUNCTION:
+      print_function(AS_FUNCTION(val));
+      break;
+    case OBJ_NATIVE:
+      printf("<native fn>");
       break;
   }
 }

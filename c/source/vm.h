@@ -1,15 +1,22 @@
 #pragma once
 
 #include "bytecode.h"
+#include "object.h"
 #include "table.h"
 #include "value.h"
 
-#define STACK_MAX 256
+#define FRAMES_MAX 64
+#define STACK_MAX (FRAMES_MAX * UINT8_COUNT)
 
 typedef struct {
-  ByteSequence* seq;
-  /** Instruction pointer */
+  ObjFunction* function;
   uint8_t* ip;
+  Value* slots;
+} CallFrame;
+
+typedef struct {
+  CallFrame frames[FRAMES_MAX];
+  int frame_count;
   Value stack[STACK_MAX];
   Value* top;
   Table globals;

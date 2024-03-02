@@ -2,9 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bytecode.h"
-#include "common.h"
-#include "debug.h"
 #include "vm.h"
 
 /** A primitive REPL with a hardcoded line length limit */

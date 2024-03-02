@@ -10,7 +10,9 @@ Checks: "-*,\
   readability-*,\
   -bugprone-easily-swappable-parameters,\
   -readability-identifier-length,\
-  -readability-magic-numbers"
+  -readability-magic-numbers,\
+  -readability-function-cognitive-complexity,\
+  -bugprone-assignment-in-if-condition"
 WarningsAsErrors: ''
 CheckOptions:
   - key: 'bugprone-argument-comment.StrictMode'

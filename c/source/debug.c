@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "bytecode.h"
+#include "object.h"
 #include "value.h"
 
 void disassemble_bseq(ByteSequence *seq, const char *name) {
@@ -60,6 +61,25 @@ int disassemble_instr(ByteSequence *seq, int offset) {
       return jump_instr("OP_LOOP", -1, seq, offset);
     case OP_CALL:
       return byte_instr("OP_CALL", seq, offset);
+    case OP_CLOSURE: {
+      offset++;
+      uint8_t constant = seq->code[offset++];
+      printf("%-16s %4d ", "OP_CLOSURE", constant);
+      print_val(seq->consts.vals[constant]);
+      printf("\n");
+
+      ObjFunction *func = AS_FUNCTION(seq->consts.vals[constant]);
+      for (int j = 0; j < func->upvalue_cnt; j++) {
+        int is_local = seq->code[offset++];
+        int index = seq->code[offset++];
+        printf("%04d      |                     %s %d\n", offset - 2,
+               is_local ? "local" : "upvalue", index);
+      }
+
+      return offset;
+    }
+    case OP_CLOSE_UPVALUE:
+      return simple_instr("OP_CLOSE_UPVALUE", offset);
     case OP_RETURN:
       return simple_instr("OP_RETURN", offset);
     case OP_ADD:
@@ -94,6 +114,10 @@ int disassemble_instr(ByteSequence *seq, int offset) {
       return const_instr("OP_DEFINE_GLOBAL", seq, offset);
     case OP_SET_GLOBAL:
       return const_instr("OP_SET_GLOBAL", seq, offset);
+    case OP_GET_UPVALUE:
+      return byte_instr("OP_GET_UPVALUE", seq, offset);
+    case OP_SET_UPVALUE:
+      return byte_instr("OP_SET_UPVALUE", seq, offset);
     case OP_EQUAL:
       return simple_instr("OP_EQUAL", offset);
     case OP_GREATER:

@@ -1,6 +1,7 @@
 #include "vm.h"
 
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -132,8 +133,8 @@ static bool is_falsey(Value value) {
 }
 
 static void concat_str(void) {
-  ObjStr* b = AS_STR(pop());
-  ObjStr* a = AS_STR(pop());
+  ObjStr* b = AS_STR(peek(0));
+  ObjStr* a = AS_STR(peek(1));
 
   int length = a->length + b->length;
   char* chars = ALLOCATE(char, length + 1);
@@ -142,12 +143,21 @@ static void concat_str(void) {
   chars[length] = '\0';
 
   ObjStr* result = take_str(chars, length);
+  pop();
+  pop();
   push(OBJ_VAL(result));
 }
 
 void init_vm(void) {
   reset_stack();
   vm.objects = NULL;
+  vm.bytes_allocated = 0;
+  vm.next_gc = (size_t)(1024 * 1024);
+
+  vm.gray_cnt = 0;
+  vm.gray_capacity = 0;
+  vm.gray_stack = NULL;
+
   init_table(&vm.globals);
   init_table(&vm.strings);
 

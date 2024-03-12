@@ -1,0 +1,3 @@
+var a = "abc";
+var b = "cde";
+print(a + b);

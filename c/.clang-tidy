@@ -8,11 +8,12 @@ Checks: "-*,\
   portability-*,\
   openmp-*,\
   readability-*,\
+  -bugprone-assignment-in-if-condition,\
   -bugprone-easily-swappable-parameters,\
+  -misc-include-cleaner,\
   -readability-identifier-length,\
   -readability-magic-numbers,\
-  -readability-function-cognitive-complexity,\
-  -bugprone-assignment-in-if-condition"
+  -readability-function-cognitive-complexity"
 WarningsAsErrors: ''
 CheckOptions:
   - key: 'bugprone-argument-comment.StrictMode'

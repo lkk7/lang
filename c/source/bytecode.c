@@ -2,6 +2,7 @@
 
 #include "memory.h"
 #include "value.h"
+#include "vm.h"
 
 void init_bsequence(ByteSequence *seq) {
   seq->size = 0;
@@ -33,6 +34,8 @@ void free_bsequence(ByteSequence *seq) {
 }
 
 int add_const(ByteSequence *seq, Value val) {
+  push(val);
   write_valarr(&seq->consts, val);
+  pop();
   return seq->consts.size - 1;
 }

@@ -22,3 +22,5 @@ bool table_delete(Table* table, ObjStr* key);
 void table_add_all(Table* from, Table* to);
 ObjStr* table_find_str(Table* table, const char* chars, int length,
                        uint32_t hash);
+void table_remove_white(Table* table);
+void mark_table(Table* table);

@@ -26,6 +26,20 @@ static Obj* allocate_object(size_t size, ObjType type) {
   return object;
 }
 
+ObjBoundMethod* new_bound_method(Value receiver, ObjClosure* method) {
+  ObjBoundMethod* bound = ALLOCATE_OBJ(ObjBoundMethod, OBJ_BOUND_METHOD);
+  bound->receiver = receiver;
+  bound->method = method;
+  return bound;
+}
+
+ObjClass* new_class(ObjStr* name) {
+  ObjClass* cls = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
+  cls->name = name;
+  init_table(&cls->methods);
+  return cls;
+}
+
 ObjClosure* new_closure(ObjFunction* function) {
   ObjUpvalue** upvalues = ALLOCATE(ObjUpvalue*, function->upvalue_cnt);
   for (int i = 0; i < function->upvalue_cnt; i++) {
@@ -45,6 +59,13 @@ ObjFunction* new_function() {
   function->name = NULL;
   init_bsequence(&function->bseq);
   return function;
+}
+
+ObjInstance* new_instance(ObjClass* cls) {
+  ObjInstance* instance = ALLOCATE_OBJ(ObjInstance, OBJ_INSTANCE);
+  instance->cls = cls;
+  init_table(&instance->fields);
+  return instance;
 }
 
 ObjNative* new_native(NativeFn function) {
@@ -113,8 +134,11 @@ static void print_function(ObjFunction* f) {
 
 void print_obj(Value val) {
   switch (OBJ_TYPE(val)) {
-    case OBJ_STR:
-      printf("%s", AS_CSTR(val));
+    case OBJ_BOUND_METHOD:
+      print_function(AS_BOUND_METHOD(val)->method->function);
+      break;
+    case OBJ_CLASS:
+      printf("%s", AS_CLASS(val)->name->chars);
       break;
     case OBJ_CLOSURE:
       print_function(AS_CLOSURE(val)->function);
@@ -122,8 +146,17 @@ void print_obj(Value val) {
     case OBJ_FUNCTION:
       print_function(AS_FUNCTION(val));
       break;
+    case OBJ_INSTANCE:
+      printf("%s instance", AS_INSTANCE(val)->cls->name->chars);
+      break;
     case OBJ_NATIVE:
       printf("<native fn>");
+      break;
+    case OBJ_STR:
+      printf("%s", AS_CSTR(val));
+      break;
+    case OBJ_UPVALUE:
+      printf("upvalue");
       break;
   }
 }

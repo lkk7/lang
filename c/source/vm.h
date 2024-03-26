@@ -21,6 +21,7 @@ typedef struct {
   Value* top;
   Table globals;
   Table strings;
+  ObjStr* init_str;
   Obj* objects;
   int gray_cnt;
   int gray_capacity;

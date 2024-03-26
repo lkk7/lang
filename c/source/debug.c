@@ -41,6 +41,15 @@ static int const_instr(const char *name, ByteSequence *seq, int offset) {
   return offset + 2;
 }
 
+static int invoke_instr(const char *name, ByteSequence *seq, int offset) {
+  uint8_t constant = seq->code[offset + 1];
+  uint8_t arg_cnt = seq->code[offset + 2];
+  printf("%-16s (%d args) %4d '", name, arg_cnt, constant);
+  print_val(seq->consts.vals[constant]);
+  printf("'\n");
+  return offset + 3;
+}
+
 int disassemble_instr(ByteSequence *seq, int offset) {
   printf("%04d ", offset);
   if (offset > 0 && seq->lines[offset] == seq->lines[offset - 1]) {
@@ -61,6 +70,8 @@ int disassemble_instr(ByteSequence *seq, int offset) {
       return jump_instr("OP_LOOP", -1, seq, offset);
     case OP_CALL:
       return byte_instr("OP_CALL", seq, offset);
+    case OP_INVOKE:
+      return invoke_instr("OP_INVOKE", seq, offset);
     case OP_CLOSURE: {
       offset++;
       uint8_t constant = seq->code[offset++];
@@ -118,12 +129,20 @@ int disassemble_instr(ByteSequence *seq, int offset) {
       return byte_instr("OP_GET_UPVALUE", seq, offset);
     case OP_SET_UPVALUE:
       return byte_instr("OP_SET_UPVALUE", seq, offset);
+    case OP_GET_PROPERTY:
+      return const_instr("OP_GET_PROPERTY", seq, offset);
+    case OP_SET_PROPERTY:
+      return const_instr("OP_SET_PROPERTY", seq, offset);
     case OP_EQUAL:
       return simple_instr("OP_EQUAL", offset);
     case OP_GREATER:
       return simple_instr("OP_GREATER", offset);
     case OP_LESS:
       return simple_instr("OP_LESS", offset);
+    case OP_CLASS:
+      return const_instr("OP_CLASS", seq, offset);
+    case OP_METHOD:
+      return const_instr("OP_METHOD", seq, offset);
     default:
       printf("Unknown opcode %d\n", instr);
       return offset + 1;

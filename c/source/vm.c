@@ -96,9 +96,11 @@ static bool call_value(Value callee, int arg_cnt) {
           runtime_error("Expected 0 arguments but got %d", arg_cnt);
           return false;
         };
+        return true;
       }
-      case OBJ_CLOSURE:
+      case OBJ_CLOSURE: {
         return call(AS_CLOSURE(callee), arg_cnt);
+      }
       case OBJ_NATIVE: {
         NativeFn native = AS_NATIVE(callee);
         Value result = native(arg_cnt, vm.top - arg_cnt);
@@ -364,6 +366,14 @@ static InterpretResult run(void) {
         push(value);
         break;
       }
+      case OP_GET_SUPER: {
+        ObjStr* name = READ_STR();
+        ObjClass* superclass = AS_CLASS(pop());
+        if (!bind_method(superclass, name)) {
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        break;
+      }
       case OP_EQUAL: {
         Value b = pop();
         Value a = pop();
@@ -447,6 +457,16 @@ static InterpretResult run(void) {
         frame = &vm.frames[vm.frame_count - 1];
         break;
       }
+      case OP_SUPER_INVOKE: {
+        ObjStr* method = READ_STR();
+        int arg_cnt = READ_BYTE();
+        ObjClass* superclass = AS_CLASS(pop());
+        if (!invoke_from_class(superclass, method, arg_cnt)) {
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        frame = &vm.frames[vm.frame_count - 1];
+        break;
+      }
       case OP_CLOSURE: {
         ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
         ObjClosure* closure = new_closure(function);
@@ -481,6 +501,18 @@ static InterpretResult run(void) {
       }
       case OP_CLASS: {
         push(OBJ_VAL(new_class(READ_STR())));
+        break;
+      }
+      case OP_INHERIT: {
+        Value superclass = peek(1);
+        if (!IS_CLASS(superclass)) {
+          runtime_error("Superclass must be a class");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+
+        ObjClass* subclass = AS_CLASS(peek(0));
+        table_add_all(&AS_CLASS(superclass)->methods, &subclass->methods);
+        pop();  // pop the subclass
         break;
       }
       case OP_METHOD: {

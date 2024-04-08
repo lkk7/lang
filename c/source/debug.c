@@ -72,6 +72,8 @@ int disassemble_instr(ByteSequence *seq, int offset) {
       return byte_instr("OP_CALL", seq, offset);
     case OP_INVOKE:
       return invoke_instr("OP_INVOKE", seq, offset);
+    case OP_SUPER_INVOKE:
+      return invoke_instr("OP_SUPER_INVOKE", seq, offset);
     case OP_CLOSURE: {
       offset++;
       uint8_t constant = seq->code[offset++];
@@ -133,6 +135,8 @@ int disassemble_instr(ByteSequence *seq, int offset) {
       return const_instr("OP_GET_PROPERTY", seq, offset);
     case OP_SET_PROPERTY:
       return const_instr("OP_SET_PROPERTY", seq, offset);
+    case OP_GET_SUPER:
+      return const_instr("OP_GET_SUPER", seq, offset);
     case OP_EQUAL:
       return simple_instr("OP_EQUAL", offset);
     case OP_GREATER:
@@ -141,6 +145,8 @@ int disassemble_instr(ByteSequence *seq, int offset) {
       return simple_instr("OP_LESS", offset);
     case OP_CLASS:
       return const_instr("OP_CLASS", seq, offset);
+    case OP_INHERIT:
+      return simple_instr("OP_INHERIT", offset);
     case OP_METHOD:
       return const_instr("OP_METHOD", seq, offset);
     default:

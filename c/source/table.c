@@ -21,7 +21,7 @@ void free_table(Table* table) {
 }
 
 static Entry* find_entry(Entry* entries, int capacity, ObjStr* key) {
-  uint32_t i = key->hash % capacity;
+  uint32_t i = key->hash & (capacity - 1);
   Entry* tombstone = NULL;
 
   while (true) {
@@ -37,7 +37,7 @@ static Entry* find_entry(Entry* entries, int capacity, ObjStr* key) {
     } else if (entry->key == key) {
       return entry;
     }
-    i = (i + 1) % capacity;
+    i = (i + 1) & (capacity - 1);
   }
 }
 
@@ -119,7 +119,7 @@ ObjStr* table_find_str(Table* table, const char* chars, int length,
   if (table->count == 0) {
     return NULL;
   }
-  uint32_t index = hash % table->capacity;
+  uint32_t index = hash & (table->capacity - 1);
   while (true) {
     Entry* entry = &table->entries[index];
     if (entry->key == NULL) {
@@ -130,8 +130,7 @@ ObjStr* table_find_str(Table* table, const char* chars, int length,
                memcmp(entry->key->chars, chars, length) == 0) {
       return entry->key;
     }
-
-    index = (index + 1) % table->capacity;
+    index = (index + 1) & (table->capacity - 1);
   }
 }
 
